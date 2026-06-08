@@ -39,7 +39,7 @@ Heart-rate data is sensitive health information. The app should keep samples
 local, request only needed permissions, and make any storage or sharing behavior
 explicit before it is added.
 
-## What We Will Not Merge For Now
+## What We Will Not Merge (For Now)
 
 - Silent health-data storage or upload
 - Broad health analytics without a privacy model
