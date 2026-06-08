@@ -45,3 +45,6 @@ explicit before it is added.
 - Broad health analytics without a privacy model
 - Entitlement changes without documentation
 - Device-data fixtures from real users
+
+This list is a roadmap guardrail, not a permanent rule.
+Strong user demand and strong technical rationale can change it.
