@@ -35,6 +35,11 @@ Contribution rules:
 
 ## Security And Responsible Use
 
+Canonical security policy and reporting:
+
+- [`SECURITY.md`](SECURITY.md)
+
+
 Heart-rate data is sensitive health information. The app should keep samples
 local, request only needed permissions, and make any storage or sharing behavior
 explicit before it is added.
