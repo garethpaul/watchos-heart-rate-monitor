@@ -49,13 +49,17 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 
 ## Testing and Verification
 
-- Xcode's test action or `xcodebuild test` with the appropriate scheme and destination
+- `make verify` runs static WatchKit contract checks and attempts an Xcode build when `xcodebuild` is available.
+- `make check` runs `make verify` with bytecode cleanup before and after.
+- `python3 scripts/check_watchos_contracts.py` runs the HealthKit privacy, entitlement, plan, and query-lifecycle contracts.
+- Xcode's test action or `xcodebuild test` can be used with the appropriate scheme and destination on a macOS/Xcode workstation.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
 ## Configuration and Secrets
 
 - No required secret or credential file was identified in the repository scan. If you add integrations later, keep secrets out of git.
+- HealthKit read access uses `NSHealthShareUsageDescription` to explain that the sample reads heart-rate data for live workout feedback.
 
 ## Security and Privacy Notes
 

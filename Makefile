@@ -1,0 +1,30 @@
+PYTHON ?= python3
+XCODEBUILD ?= xcodebuild
+PROJECT := HeartyMonitor.xcodeproj
+SCHEME := HeartyMonitor
+CONTRACT_SCRIPT := \
+	scripts/check_watchos_contracts.py
+
+.PHONY: clean lint test build verify check
+
+clean:
+	find . -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete
+	find . -type d -name '__pycache__' -prune -exec rm -rf {} +
+
+lint:
+	PYTHONDONTWRITEBYTECODE=1 $(PYTHON) -m py_compile $(CONTRACT_SCRIPT)
+
+test:
+	PYTHONDONTWRITEBYTECODE=1 $(PYTHON) $(CONTRACT_SCRIPT)
+
+build:
+	@if command -v $(XCODEBUILD) >/dev/null 2>&1; then \
+		$(XCODEBUILD) -project "$(PROJECT)" -scheme "$(SCHEME)" -configuration Debug CODE_SIGNING_ALLOWED=NO build; \
+	else \
+		echo "Skipping xcodebuild: xcodebuild is not installed."; \
+	fi
+
+verify: lint test build
+
+check: clean verify
+	$(MAKE) clean

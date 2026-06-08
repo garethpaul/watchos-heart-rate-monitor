@@ -5,6 +5,9 @@
 ## Build generated
 build/
 DerivedData
+__pycache__/
+*.pyc
+*.pyo
 
 ## Various settings
 *.pbxuser
