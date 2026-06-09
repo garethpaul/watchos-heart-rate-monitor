@@ -9,6 +9,7 @@ HEALTHKIT_PLAN_PATH = ROOT / "docs" / "plans" / "2026-06-08-healthkit-privacy-st
 UITEST_MIRROR_PLAN_PATH = ROOT / "docs" / "plans" / "2026-06-08-watchkit-uitest-query-mirror.md"
 SESSION_START_PLAN_PATH = ROOT / "docs" / "plans" / "2026-06-08-watchkit-session-start.md"
 SESSION_FAILURE_PLAN_PATH = ROOT / "docs" / "plans" / "2026-06-09-watchkit-session-failure-ui.md"
+SESSION_END_PLAN_PATH = ROOT / "docs" / "plans" / "2026-06-09-watchkit-session-end-ui.md"
 INTERFACE_CONTROLLERS = [
     Path("HeartyMonitor WatchKit Extension/InterfaceController.swift"),
     Path("HeartyMonitorUITests/HeartyMonitor WatchKit Extension/InterfaceController.swift"),
@@ -78,6 +79,7 @@ def test_completed_plans_are_in_docs_plans():
     assert_completed_plan(UITEST_MIRROR_PLAN_PATH, "UITest WatchKit mirror")
     assert_completed_plan(SESSION_START_PLAN_PATH, "WatchKit session start")
     assert_completed_plan(SESSION_FAILURE_PLAN_PATH, "WatchKit session failure UI")
+    assert_completed_plan(SESSION_END_PLAN_PATH, "WatchKit session end UI")
 
 
 def test_heart_rate_streaming_query_is_retained_and_stopped():
@@ -156,6 +158,24 @@ def test_workout_session_failure_resets_ui_without_sensitive_logs():
         )
 
 
+def test_workout_session_end_resets_ui_state():
+    for relative_path in INTERFACE_CONTROLLERS:
+        source = (ROOT / relative_path).read_text()
+        method = source.split("func workoutDidEnd", 1)[1].split("// MARK", 1)[0]
+        assert_true(
+            "workoutActive = false" in method,
+            "{0} workoutDidEnd must reset workoutActive".format(relative_path),
+        )
+        assert_true(
+            'startStopButton.setTitle("Start")' in method,
+            "{0} workoutDidEnd must restore the Start button title".format(relative_path),
+        )
+        assert_true(
+            "workoutSession = nil" in method,
+            "{0} workoutDidEnd must clear the retained workout session".format(relative_path),
+        )
+
+
 def main():
     tests = [
         test_healthkit_plists_have_share_usage_description,
@@ -165,6 +185,7 @@ def main():
         test_healthkit_update_handler_guards_anchor,
         test_workout_session_start_avoids_optional_force_unwrap,
         test_workout_session_failure_resets_ui_without_sensitive_logs,
+        test_workout_session_end_resets_ui_state,
     ]
     for test in tests:
         test()

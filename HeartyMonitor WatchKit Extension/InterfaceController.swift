@@ -91,10 +91,13 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
     }
     
     func workoutDidEnd(date : NSDate) {
+        workoutActive = false
+        startStopButton.setTitle("Start")
         if let query = heartRateQuery {
             healthStore.stopQuery(query)
             heartRateQuery = nil
         }
+        workoutSession = nil
         label.setText("---")
     }
     

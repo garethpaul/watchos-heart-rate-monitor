@@ -2,6 +2,9 @@
 
 ## 2026-06-09
 
+- Reset WatchKit workout active state, Start button title, and retained session
+  state when sessions end normally.
+- Added mirrored static contract coverage for ended-session UI cleanup.
 - Reset WatchKit workout UI state, stopped retained heart-rate queries, and
   avoided `error.userInfo` logging when a workout session fails.
 - Added mirrored static contract coverage for failed-session UI handling.
