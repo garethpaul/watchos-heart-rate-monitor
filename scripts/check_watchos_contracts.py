@@ -5,8 +5,12 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PLAN_PATH = ROOT / "docs" / "plans" / "2026-06-08-healthkit-privacy-strings.md"
-INTERFACE_CONTROLLER = ROOT / "HeartyMonitor WatchKit Extension" / "InterfaceController.swift"
+HEALTHKIT_PLAN_PATH = ROOT / "docs" / "plans" / "2026-06-08-healthkit-privacy-strings.md"
+UITEST_MIRROR_PLAN_PATH = ROOT / "docs" / "plans" / "2026-06-08-watchkit-uitest-query-mirror.md"
+INTERFACE_CONTROLLERS = [
+    Path("HeartyMonitor WatchKit Extension/InterfaceController.swift"),
+    Path("HeartyMonitorUITests/HeartyMonitor WatchKit Extension/InterfaceController.swift"),
+]
 
 HEALTHKIT_INFO_PLISTS = [
     Path("HeartyMonitor/Info.plist"),
@@ -57,53 +61,60 @@ def test_healthkit_entitlements_are_enabled():
         )
 
 
-def test_completed_plan_is_in_docs_plans():
-    assert_true(PLAN_PATH.is_file(), "HealthKit privacy plan must live under docs/plans")
-    plan_text = PLAN_PATH.read_text()
+def assert_completed_plan(path, label):
+    assert_true(path.is_file(), "{0} plan must live under docs/plans".format(label))
+    plan_text = path.read_text()
     assert_true(
         "status: completed" in plan_text.lower(),
-        "HealthKit privacy plan must be marked completed",
+        "{0} plan must be marked completed".format(label),
     )
-    assert_true("make check" in plan_text, "HealthKit privacy plan must document make check verification")
+    assert_true("make check" in plan_text, "{0} plan must document make check verification".format(label))
+
+
+def test_completed_plans_are_in_docs_plans():
+    assert_completed_plan(HEALTHKIT_PLAN_PATH, "HealthKit privacy")
+    assert_completed_plan(UITEST_MIRROR_PLAN_PATH, "UITest WatchKit mirror")
 
 
 def test_heart_rate_streaming_query_is_retained_and_stopped():
-    source = INTERFACE_CONTROLLER.read_text()
-    assert_true(
-        "var heartRateQuery" in source,
-        "InterfaceController must retain the active heart-rate query",
-    )
-    assert_true(
-        "heartRateQuery = query" in source or "self.heartRateQuery = query" in source,
-        "workoutDidStart must store the query it executes",
-    )
-    assert_true(
-        "if let query = heartRateQuery" in source or "if let query = self.heartRateQuery" in source,
-        "workoutDidEnd must stop the retained query",
-    )
-    assert_true(
-        "heartRateQuery = nil" in source or "self.heartRateQuery = nil" in source,
-        "workoutDidEnd must clear the retained query after stopping it",
-    )
+    for relative_path in INTERFACE_CONTROLLERS:
+        source = (ROOT / relative_path).read_text()
+        assert_true(
+            "var heartRateQuery" in source,
+            "{0} must retain the active heart-rate query".format(relative_path),
+        )
+        assert_true(
+            "heartRateQuery = query" in source or "self.heartRateQuery = query" in source,
+            "{0} workoutDidStart must store the query it executes".format(relative_path),
+        )
+        assert_true(
+            "if let query = heartRateQuery" in source or "if let query = self.heartRateQuery" in source,
+            "{0} workoutDidEnd must stop the retained query".format(relative_path),
+        )
+        assert_true(
+            "heartRateQuery = nil" in source or "self.heartRateQuery = nil" in source,
+            "{0} workoutDidEnd must clear the retained query after stopping it".format(relative_path),
+        )
 
 
 def test_healthkit_update_handler_guards_anchor():
-    source = INTERFACE_CONTROLLER.read_text()
-    assert_true(
-        "newAnchor!" not in source,
-        "HealthKit update handlers must not force-unwrap newAnchor",
-    )
-    assert_true(
-        "guard let newAnchor = newAnchor else" in source,
-        "HealthKit update handlers must ignore callbacks without a new anchor",
-    )
+    for relative_path in INTERFACE_CONTROLLERS:
+        source = (ROOT / relative_path).read_text()
+        assert_true(
+            "newAnchor!" not in source,
+            "{0} update handlers must not force-unwrap newAnchor".format(relative_path),
+        )
+        assert_true(
+            "guard let newAnchor = newAnchor else" in source,
+            "{0} update handlers must ignore callbacks without a new anchor".format(relative_path),
+        )
 
 
 def main():
     tests = [
         test_healthkit_plists_have_share_usage_description,
         test_healthkit_entitlements_are_enabled,
-        test_completed_plan_is_in_docs_plans,
+        test_completed_plans_are_in_docs_plans,
         test_heart_rate_streaming_query_is_retained_and_stopped,
         test_healthkit_update_handler_guards_anchor,
     ]

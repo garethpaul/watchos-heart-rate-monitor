@@ -2,6 +2,7 @@
 
 ## 2026-06-08
 
+- Synced the duplicated WatchKit controller with the retained-query lifecycle and guarded HealthKit anchors.
 - Tightened docs-plan verification to require recorded `make check` evidence.
 - Added a local `make verify` gate with static WatchKit privacy and lifecycle contract checks.
 - Retained the active HealthKit heart-rate query so workout shutdown stops the same query it started.

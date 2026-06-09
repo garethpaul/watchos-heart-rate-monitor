@@ -76,6 +76,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - See `VISION.md` for project direction and contribution guardrails.
 - See `docs/plans/2026-06-08-healthkit-privacy-strings.md` for the current
   HealthKit privacy and query baseline.
+- See `docs/plans/2026-06-08-watchkit-uitest-query-mirror.md` for the duplicated
+  WatchKit controller lifecycle mirror.
 
 ## Contributing
 

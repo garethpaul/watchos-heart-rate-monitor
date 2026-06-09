@@ -25,6 +25,7 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
     
     // define the activity type and location
     var workoutSession : HKWorkoutSession?
+    var heartRateQuery : HKQuery?
     let heartRateUnit = HKUnit(fromString: "count/min")
     var anchor = HKQueryAnchor(fromValue: Int(HKAnchoredObjectQueryNoAnchor))
     
@@ -76,6 +77,7 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
     
     func workoutDidStart(date : NSDate) {
         if let query = createHeartRateStreamingQuery(date) {
+            heartRateQuery = query
             healthStore.executeQuery(query)
         } else {
             label.setText("cannot start")
@@ -83,12 +85,11 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
     }
     
     func workoutDidEnd(date : NSDate) {
-        if let query = createHeartRateStreamingQuery(date) {
+        if let query = heartRateQuery {
             healthStore.stopQuery(query)
-            label.setText("---")
-        } else {
-            label.setText("cannot stop")
+            heartRateQuery = nil
         }
+        label.setText("---")
     }
     
     // MARK: - Actions
@@ -128,7 +129,8 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
         }
         
         heartRateQuery.updateHandler = {(query, samples, deleteObjects, newAnchor, error) -> Void in
-            self.anchor = newAnchor!
+            guard let newAnchor = newAnchor else {return}
+            self.anchor = newAnchor
             self.updateHeartRate(samples)
         }
         return heartRateQuery
