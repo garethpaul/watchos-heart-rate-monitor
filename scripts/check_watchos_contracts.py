@@ -13,6 +13,9 @@ SESSION_END_PLAN_PATH = ROOT / "docs" / "plans" / "2026-06-09-watchkit-session-e
 AUTHORIZATION_MAIN_THREAD_PLAN_PATH = (
     ROOT / "docs" / "plans" / "2026-06-09-watchkit-authorization-main-thread.md"
 )
+AUTHORIZATION_START_BUTTON_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-09-watchkit-authorization-start-button.md"
+)
 QUERY_FAILURE_PLAN_PATH = (
     ROOT / "docs" / "plans" / "2026-06-09-watchkit-query-start-failure-ui.md"
 )
@@ -93,6 +96,7 @@ def test_completed_plans_are_in_docs_plans():
     assert_completed_plan(SESSION_FAILURE_PLAN_PATH, "WatchKit session failure UI")
     assert_completed_plan(SESSION_END_PLAN_PATH, "WatchKit session end UI")
     assert_completed_plan(AUTHORIZATION_MAIN_THREAD_PLAN_PATH, "WatchKit authorization main thread")
+    assert_completed_plan(AUTHORIZATION_START_BUTTON_PLAN_PATH, "WatchKit authorization start button")
     assert_completed_plan(QUERY_FAILURE_PLAN_PATH, "WatchKit query start failure UI")
     assert_completed_plan(HEART_RATE_VALUE_PLAN_PATH, "WatchKit heart-rate value bounds")
     assert_completed_plan(SESSION_DELEGATE_MAIN_THREAD_PLAN_PATH, "WatchKit session delegate main thread")
@@ -141,6 +145,53 @@ def test_authorization_denial_updates_ui_on_main_queue():
             authorization_block.index("dispatch_async(dispatch_get_main_queue())")
             < authorization_block.index("self.displayNotAllowed()"),
             "{0} must dispatch before updating denied-authorization UI".format(relative_path),
+        )
+
+
+def test_healthkit_authorization_controls_start_button_state():
+    for relative_path in INTERFACE_CONTROLLERS:
+        source = (ROOT / relative_path).read_text()
+        will_activate = source.split("override func willActivate()", 1)[1].split(
+            "func displayNotAllowed", 1
+        )[0]
+        unavailable_block = will_activate.split(
+            "guard HKHealthStore.isHealthDataAvailable() == true else", 1
+        )[1].split("guard let quantityType", 1)[0]
+        authorization_setup = will_activate.split(
+            "let dataTypes = Set(arrayLiteral: quantityType)", 1
+        )[1]
+        authorization_block = source.split(
+            "healthStore.requestAuthorizationToShareTypes", 1
+        )[1].split("func displayNotAllowed", 1)[0]
+        display_not_allowed = source.split("func displayNotAllowed()", 1)[1].split(
+            "func workoutSession", 1
+        )[0]
+
+        assert_true(
+            "startStopButton.setEnabled(false)" in unavailable_block,
+            "{0} must disable Start when HealthKit data is unavailable".format(relative_path),
+        )
+        assert_true(
+            "startStopButton.setEnabled(false)" in display_not_allowed,
+            "{0} denied HealthKit feedback must disable Start".format(relative_path),
+        )
+        assert_true(
+            authorization_setup.index("startStopButton.setEnabled(false)")
+            < authorization_setup.index("healthStore.requestAuthorizationToShareTypes"),
+            "{0} must disable Start while HealthKit authorization is pending".format(relative_path),
+        )
+        assert_true(
+            "if success == true" in authorization_block,
+            "{0} must explicitly handle successful HealthKit authorization".format(relative_path),
+        )
+        assert_true(
+            "self.startStopButton.setEnabled(true)" in authorization_block,
+            "{0} must re-enable Start after successful HealthKit authorization".format(relative_path),
+        )
+        assert_true(
+            authorization_block.index("dispatch_async(dispatch_get_main_queue())")
+            < authorization_block.index("self.startStopButton.setEnabled(true)"),
+            "{0} must re-enable Start on the main queue".format(relative_path),
         )
 
 
@@ -303,6 +354,7 @@ def main():
         test_completed_plans_are_in_docs_plans,
         test_heart_rate_streaming_query_is_retained_and_stopped,
         test_authorization_denial_updates_ui_on_main_queue,
+        test_healthkit_authorization_controls_start_button_state,
         test_healthkit_update_handler_guards_anchor,
         test_workout_session_start_avoids_optional_force_unwrap,
         test_heart_rate_query_failure_resets_ui_state,

@@ -39,6 +39,7 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
         
         guard HKHealthStore.isHealthDataAvailable() == true else {
             label.setText("not available")
+            startStopButton.setEnabled(false)
             return
         }
         
@@ -48,9 +49,12 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
         }
         
         let dataTypes = Set(arrayLiteral: quantityType)
+        startStopButton.setEnabled(false)
         healthStore.requestAuthorizationToShareTypes(nil, readTypes: dataTypes) { (success, error) -> Void in
-            if success == false {
-                dispatch_async(dispatch_get_main_queue()) {
+            dispatch_async(dispatch_get_main_queue()) {
+                if success == true {
+                    self.startStopButton.setEnabled(true)
+                } else if success == false {
                     self.displayNotAllowed()
                 }
             }
@@ -59,6 +63,7 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
     
     func displayNotAllowed() {
         label.setText("not allowed")
+        startStopButton.setEnabled(false)
     }
     
     func workoutSession(workoutSession: HKWorkoutSession, didChangeToState toState: HKWorkoutSessionState, fromState: HKWorkoutSessionState, date: NSDate) {

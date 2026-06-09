@@ -2,6 +2,11 @@
 
 ## 2026-06-09
 
+- Disabled the WatchKit Start button while HealthKit authorization is
+  unavailable, denied, or pending, and re-enabled it after successful
+  authorization on the main queue in both controller copies.
+- Added mirrored static contract coverage for HealthKit authorization
+  Start-button state.
 - Dispatched WatchKit workout session start/end/failure UI cleanup onto the
   main queue in both controller copies and clear retained failed sessions.
 - Added mirrored static contract coverage for workout session delegate UI
