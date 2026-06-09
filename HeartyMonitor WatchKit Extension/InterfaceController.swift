@@ -160,6 +160,7 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
         dispatch_async(dispatch_get_main_queue()) {
             guard let sample = heartRateSamples.first else{return}
             let value = sample.quantity.doubleValueForUnit(self.heartRateUnit)
+            guard value >= 0 && value <= 300 else{return}
             self.label.setText(String(UInt16(value)))
             
             // retrieve source from sample

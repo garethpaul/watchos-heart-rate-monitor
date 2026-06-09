@@ -2,6 +2,9 @@
 
 ## 2026-06-09
 
+- Bounded displayed WatchKit heart-rate sample values before converting them to
+  `UInt16` in both controller copies.
+- Added mirrored static contract coverage for heart-rate display value bounds.
 - Dispatched denied HealthKit authorization UI updates onto the main queue in
   both WatchKit controller copies.
 - Added mirrored static contract coverage for authorization denial UI dispatch.

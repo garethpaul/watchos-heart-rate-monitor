@@ -16,6 +16,9 @@ AUTHORIZATION_MAIN_THREAD_PLAN_PATH = (
 QUERY_FAILURE_PLAN_PATH = (
     ROOT / "docs" / "plans" / "2026-06-09-watchkit-query-start-failure-ui.md"
 )
+HEART_RATE_VALUE_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-09-watchkit-heart-rate-value-bounds.md"
+)
 INTERFACE_CONTROLLERS = [
     Path("HeartyMonitor WatchKit Extension/InterfaceController.swift"),
     Path("HeartyMonitorUITests/HeartyMonitor WatchKit Extension/InterfaceController.swift"),
@@ -88,6 +91,7 @@ def test_completed_plans_are_in_docs_plans():
     assert_completed_plan(SESSION_END_PLAN_PATH, "WatchKit session end UI")
     assert_completed_plan(AUTHORIZATION_MAIN_THREAD_PLAN_PATH, "WatchKit authorization main thread")
     assert_completed_plan(QUERY_FAILURE_PLAN_PATH, "WatchKit query start failure UI")
+    assert_completed_plan(HEART_RATE_VALUE_PLAN_PATH, "WatchKit heart-rate value bounds")
 
 
 def test_heart_rate_streaming_query_is_retained_and_stopped():
@@ -235,6 +239,21 @@ def test_workout_session_end_resets_ui_state():
         )
 
 
+def test_heart_rate_values_are_bounded_before_display():
+    for relative_path in INTERFACE_CONTROLLERS:
+        source = (ROOT / relative_path).read_text()
+        method = source.split("func updateHeartRate", 1)[1].split("func updateDeviceName", 1)[0]
+        assert_true(
+            "guard value >= 0 && value <= 300 else{return}" in method,
+            "{0} must reject out-of-range heart-rate values before display".format(relative_path),
+        )
+        assert_true(
+            method.index("guard value >= 0 && value <= 300 else{return}")
+            < method.index("String(UInt16(value))"),
+            "{0} must bound heart-rate values before UInt16 display conversion".format(relative_path),
+        )
+
+
 def main():
     tests = [
         test_healthkit_plists_have_share_usage_description,
@@ -247,6 +266,7 @@ def main():
         test_heart_rate_query_failure_resets_ui_state,
         test_workout_session_failure_resets_ui_without_sensitive_logs,
         test_workout_session_end_resets_ui_state,
+        test_heart_rate_values_are_bounded_before_display,
     ]
     for test in tests:
         test()
