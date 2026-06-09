@@ -111,9 +111,10 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
     }
     
     func startWorkout() {
-        self.workoutSession = HKWorkoutSession(activityType: HKWorkoutActivityType.CrossTraining, locationType: HKWorkoutSessionLocationType.Indoor)
-        self.workoutSession?.delegate = self
-        healthStore.startWorkoutSession(self.workoutSession!)
+        let session = HKWorkoutSession(activityType: HKWorkoutActivityType.CrossTraining, locationType: HKWorkoutSessionLocationType.Indoor)
+        session.delegate = self
+        self.workoutSession = session
+        healthStore.startWorkoutSession(session)
     }
     
     func createHeartRateStreamingQuery(workoutStartDate: NSDate) -> HKQuery? {

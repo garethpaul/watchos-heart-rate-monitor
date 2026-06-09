@@ -2,6 +2,8 @@
 
 ## 2026-06-08
 
+- Started WatchKit workouts from the local `HKWorkoutSession` value instead of
+  force-unwrapping optional controller state.
 - Synced the duplicated WatchKit controller with the retained-query lifecycle and guarded HealthKit anchors.
 - Tightened docs-plan verification to require recorded `make check` evidence.
 - Added a local `make verify` gate with static WatchKit privacy and lifecycle contract checks.

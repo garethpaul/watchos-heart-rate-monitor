@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 HEALTHKIT_PLAN_PATH = ROOT / "docs" / "plans" / "2026-06-08-healthkit-privacy-strings.md"
 UITEST_MIRROR_PLAN_PATH = ROOT / "docs" / "plans" / "2026-06-08-watchkit-uitest-query-mirror.md"
+SESSION_START_PLAN_PATH = ROOT / "docs" / "plans" / "2026-06-08-watchkit-session-start.md"
 INTERFACE_CONTROLLERS = [
     Path("HeartyMonitor WatchKit Extension/InterfaceController.swift"),
     Path("HeartyMonitorUITests/HeartyMonitor WatchKit Extension/InterfaceController.swift"),
@@ -74,6 +75,7 @@ def assert_completed_plan(path, label):
 def test_completed_plans_are_in_docs_plans():
     assert_completed_plan(HEALTHKIT_PLAN_PATH, "HealthKit privacy")
     assert_completed_plan(UITEST_MIRROR_PLAN_PATH, "UITest WatchKit mirror")
+    assert_completed_plan(SESSION_START_PLAN_PATH, "WatchKit session start")
 
 
 def test_heart_rate_streaming_query_is_retained_and_stopped():
@@ -110,6 +112,23 @@ def test_healthkit_update_handler_guards_anchor():
         )
 
 
+def test_workout_session_start_avoids_optional_force_unwrap():
+    for relative_path in INTERFACE_CONTROLLERS:
+        source = (ROOT / relative_path).read_text()
+        assert_true(
+            "startWorkoutSession(self.workoutSession!)" not in source,
+            "{0} must not force-unwrap workoutSession when starting".format(relative_path),
+        )
+        assert_true(
+            "let session = HKWorkoutSession" in source,
+            "{0} must keep a local workout session before storing it".format(relative_path),
+        )
+        assert_true(
+            "healthStore.startWorkoutSession(session)" in source,
+            "{0} must start the local workout session value".format(relative_path),
+        )
+
+
 def main():
     tests = [
         test_healthkit_plists_have_share_usage_description,
@@ -117,6 +136,7 @@ def main():
         test_completed_plans_are_in_docs_plans,
         test_heart_rate_streaming_query_is_retained_and_stopped,
         test_healthkit_update_handler_guards_anchor,
+        test_workout_session_start_avoids_optional_force_unwrap,
     ]
     for test in tests:
         test()
