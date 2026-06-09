@@ -54,8 +54,8 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 - `python3 scripts/check_watchos_contracts.py` runs the HealthKit privacy,
   entitlement, plan, query-lifecycle, authorization UI-thread, workout
   authorization Start-button state, session-start, workout delegate UI-thread,
-  query-start failure, heart-rate value-bound, and workout
-  session-failure/session-end contracts.
+  query-start failure, inactive heart-rate callback, heart-rate value-bound,
+  and workout session-failure/session-end contracts.
 - Completed maintenance plans live under `docs/plans` and are checked by
   `make check`.
 - Xcode's test action or `xcodebuild test` can be used with the appropriate scheme and destination on a macOS/Xcode workstation.
@@ -98,6 +98,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   bounds checks before heart-rate values are converted for display.
 - See `docs/plans/2026-06-09-watchkit-session-delegate-main-thread.md` for
   mirrored workout session delegate UI dispatch coverage.
+- See `docs/plans/2026-06-09-watchkit-inactive-heart-rate-callbacks.md` for
+  mirrored guards that ignore heart-rate callbacks after workouts are inactive.
 
 ## Contributing
 

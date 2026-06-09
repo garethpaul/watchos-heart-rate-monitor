@@ -151,12 +151,14 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
         guard let quantityType = HKObjectType.quantityTypeForIdentifier(HKQuantityTypeIdentifierHeartRate) else { return nil }
         
         let heartRateQuery = HKAnchoredObjectQuery(type: quantityType, predicate: nil, anchor: anchor, limit: Int(HKObjectQueryNoLimit)) { (query, sampleObjects, deletedObjects, newAnchor, error) -> Void in
+            guard self.workoutActive else {return}
             guard let newAnchor = newAnchor else {return}
             self.anchor = newAnchor
             self.updateHeartRate(sampleObjects)
         }
         
         heartRateQuery.updateHandler = {(query, samples, deleteObjects, newAnchor, error) -> Void in
+            guard self.workoutActive else {return}
             guard let newAnchor = newAnchor else {return}
             self.anchor = newAnchor
             self.updateHeartRate(samples)

@@ -25,6 +25,9 @@ HEART_RATE_VALUE_PLAN_PATH = (
 SESSION_DELEGATE_MAIN_THREAD_PLAN_PATH = (
     ROOT / "docs" / "plans" / "2026-06-09-watchkit-session-delegate-main-thread.md"
 )
+HEART_RATE_INACTIVE_CALLBACK_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-09-watchkit-inactive-heart-rate-callbacks.md"
+)
 INTERFACE_CONTROLLERS = [
     Path("HeartyMonitor WatchKit Extension/InterfaceController.swift"),
     Path("HeartyMonitorUITests/HeartyMonitor WatchKit Extension/InterfaceController.swift"),
@@ -100,6 +103,7 @@ def test_completed_plans_are_in_docs_plans():
     assert_completed_plan(QUERY_FAILURE_PLAN_PATH, "WatchKit query start failure UI")
     assert_completed_plan(HEART_RATE_VALUE_PLAN_PATH, "WatchKit heart-rate value bounds")
     assert_completed_plan(SESSION_DELEGATE_MAIN_THREAD_PLAN_PATH, "WatchKit session delegate main thread")
+    assert_completed_plan(HEART_RATE_INACTIVE_CALLBACK_PLAN_PATH, "WatchKit inactive heart-rate callbacks")
 
 
 def test_heart_rate_streaming_query_is_retained_and_stopped():
@@ -205,6 +209,21 @@ def test_healthkit_update_handler_guards_anchor():
         assert_true(
             "guard let newAnchor = newAnchor else" in source,
             "{0} update handlers must ignore callbacks without a new anchor".format(relative_path),
+        )
+
+
+def test_heart_rate_callbacks_ignore_inactive_workouts():
+    for relative_path in INTERFACE_CONTROLLERS:
+        source = (ROOT / relative_path).read_text()
+        method = source.split("func createHeartRateStreamingQuery", 1)[1].split("func updateHeartRate", 1)[0]
+        assert_true(
+            method.count("guard self.workoutActive else {return}") >= 2,
+            "{0} heart-rate callbacks must ignore inactive workouts".format(relative_path),
+        )
+        assert_true(
+            method.index("guard self.workoutActive else {return}")
+            < method.index("self.anchor = newAnchor"),
+            "{0} heart-rate callbacks must check workout state before anchor/UI updates".format(relative_path),
         )
 
 
@@ -356,6 +375,7 @@ def main():
         test_authorization_denial_updates_ui_on_main_queue,
         test_healthkit_authorization_controls_start_button_state,
         test_healthkit_update_handler_guards_anchor,
+        test_heart_rate_callbacks_ignore_inactive_workouts,
         test_workout_session_start_avoids_optional_force_unwrap,
         test_heart_rate_query_failure_resets_ui_state,
         test_workout_session_failure_resets_ui_without_sensitive_logs,

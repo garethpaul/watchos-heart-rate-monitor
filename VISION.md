@@ -23,6 +23,7 @@ Priority:
 - Reset visible workout controls when heart-rate query startup fails
 - Reset visible workout controls when workout sessions fail
 - Reset visible workout controls when workout sessions end normally
+- Ignore heart-rate callbacks after workouts are inactive
 - Ignore out-of-range heart-rate values before display conversion
 - Avoid storing or uploading heart-rate samples by default
 - Treat Swift/watchOS project versions as legacy until documented

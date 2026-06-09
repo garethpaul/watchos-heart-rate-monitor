@@ -2,6 +2,10 @@
 
 ## 2026-06-09
 
+- Ignored delayed heart-rate query callbacks after workouts are inactive in
+  both WatchKit controller copies.
+- Added mirrored static contract coverage for inactive heart-rate callback
+  guards.
 - Disabled the WatchKit Start button while HealthKit authorization is
   unavailable, denied, or pending, and re-enabled it after successful
   authorization on the main queue in both controller copies.
