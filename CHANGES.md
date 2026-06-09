@@ -5,6 +5,9 @@
 - Dispatched denied HealthKit authorization UI updates onto the main queue in
   both WatchKit controller copies.
 - Added mirrored static contract coverage for authorization denial UI dispatch.
+- Reset WatchKit workout state and ended retained sessions when heart-rate
+  query creation fails.
+- Added mirrored static contract coverage for heart-rate query startup failure.
 - Reset WatchKit workout active state, Start button title, and retained session
   state when sessions end normally.
 - Added mirrored static contract coverage for ended-session UI cleanup.

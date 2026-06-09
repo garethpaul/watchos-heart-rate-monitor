@@ -13,6 +13,9 @@ SESSION_END_PLAN_PATH = ROOT / "docs" / "plans" / "2026-06-09-watchkit-session-e
 AUTHORIZATION_MAIN_THREAD_PLAN_PATH = (
     ROOT / "docs" / "plans" / "2026-06-09-watchkit-authorization-main-thread.md"
 )
+QUERY_FAILURE_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-09-watchkit-query-start-failure-ui.md"
+)
 INTERFACE_CONTROLLERS = [
     Path("HeartyMonitor WatchKit Extension/InterfaceController.swift"),
     Path("HeartyMonitorUITests/HeartyMonitor WatchKit Extension/InterfaceController.swift"),
@@ -84,6 +87,7 @@ def test_completed_plans_are_in_docs_plans():
     assert_completed_plan(SESSION_FAILURE_PLAN_PATH, "WatchKit session failure UI")
     assert_completed_plan(SESSION_END_PLAN_PATH, "WatchKit session end UI")
     assert_completed_plan(AUTHORIZATION_MAIN_THREAD_PLAN_PATH, "WatchKit authorization main thread")
+    assert_completed_plan(QUERY_FAILURE_PLAN_PATH, "WatchKit query start failure UI")
 
 
 def test_heart_rate_streaming_query_is_retained_and_stopped():
@@ -162,6 +166,32 @@ def test_workout_session_start_avoids_optional_force_unwrap():
         )
 
 
+def test_heart_rate_query_failure_resets_ui_state():
+    for relative_path in INTERFACE_CONTROLLERS:
+        source = (ROOT / relative_path).read_text()
+        method = source.split("func workoutDidStart", 1)[1].split("func workoutDidEnd", 1)[0]
+        assert_true(
+            'label.setText("cannot start")' in method,
+            "{0} query failures must show visible failure text".format(relative_path),
+        )
+        assert_true(
+            "workoutActive = false" in method,
+            "{0} query failures must reset workoutActive".format(relative_path),
+        )
+        assert_true(
+            'startStopButton.setTitle("Start")' in method,
+            "{0} query failures must restore the Start button title".format(relative_path),
+        )
+        assert_true(
+            "workoutSession = nil" in method,
+            "{0} query failures must clear the retained workout session".format(relative_path),
+        )
+        assert_true(
+            "healthStore.endWorkoutSession(workout)" in method,
+            "{0} query failures must end the retained workout session".format(relative_path),
+        )
+
+
 def test_workout_session_failure_resets_ui_without_sensitive_logs():
     for relative_path in INTERFACE_CONTROLLERS:
         source = (ROOT / relative_path).read_text()
@@ -214,6 +244,7 @@ def main():
         test_authorization_denial_updates_ui_on_main_queue,
         test_healthkit_update_handler_guards_anchor,
         test_workout_session_start_avoids_optional_force_unwrap,
+        test_heart_rate_query_failure_resets_ui_state,
         test_workout_session_failure_resets_ui_without_sensitive_logs,
         test_workout_session_end_resets_ui_state,
     ]

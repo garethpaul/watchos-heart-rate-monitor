@@ -18,6 +18,7 @@ Priority:
 - Keep HealthKit authorization visible
 - Keep HealthKit authorization UI updates on the main queue
 - Avoid force-unwrapping workout session state while starting workouts
+- Reset visible workout controls when heart-rate query startup fails
 - Reset visible workout controls when workout sessions fail
 - Reset visible workout controls when workout sessions end normally
 - Avoid storing or uploading heart-rate samples by default

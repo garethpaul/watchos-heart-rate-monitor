@@ -88,6 +88,12 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
             heartRateQuery = query
             healthStore.executeQuery(query)
         } else {
+            workoutActive = false
+            startStopButton.setTitle("Start")
+            if let workout = workoutSession {
+                healthStore.endWorkoutSession(workout)
+            }
+            workoutSession = nil
             label.setText("cannot start")
         }
     }
