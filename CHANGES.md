@@ -1,5 +1,11 @@
 # Changes
 
+## 2026-06-09
+
+- Reset WatchKit workout UI state, stopped retained heart-rate queries, and
+  avoided `error.userInfo` logging when a workout session fails.
+- Added mirrored static contract coverage for failed-session UI handling.
+
 ## 2026-06-08
 
 - Started WatchKit workouts from the local `HKWorkoutSession` value instead of

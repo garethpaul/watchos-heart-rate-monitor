@@ -71,8 +71,14 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
     }
     
     func workoutSession(workoutSession: HKWorkoutSession, didFailWithError error: NSError) {
-        // Do nothing for now
-        NSLog("Workout error: \(error.userInfo)")
+        workoutActive = false
+        startStopButton.setTitle("Start")
+        if let query = heartRateQuery {
+            healthStore.stopQuery(query)
+            heartRateQuery = nil
+        }
+        label.setText("cannot start")
+        NSLog("Workout session failed")
     }
     
     func workoutDidStart(date : NSDate) {

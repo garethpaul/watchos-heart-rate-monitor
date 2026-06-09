@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 HEALTHKIT_PLAN_PATH = ROOT / "docs" / "plans" / "2026-06-08-healthkit-privacy-strings.md"
 UITEST_MIRROR_PLAN_PATH = ROOT / "docs" / "plans" / "2026-06-08-watchkit-uitest-query-mirror.md"
 SESSION_START_PLAN_PATH = ROOT / "docs" / "plans" / "2026-06-08-watchkit-session-start.md"
+SESSION_FAILURE_PLAN_PATH = ROOT / "docs" / "plans" / "2026-06-09-watchkit-session-failure-ui.md"
 INTERFACE_CONTROLLERS = [
     Path("HeartyMonitor WatchKit Extension/InterfaceController.swift"),
     Path("HeartyMonitorUITests/HeartyMonitor WatchKit Extension/InterfaceController.swift"),
@@ -76,6 +77,7 @@ def test_completed_plans_are_in_docs_plans():
     assert_completed_plan(HEALTHKIT_PLAN_PATH, "HealthKit privacy")
     assert_completed_plan(UITEST_MIRROR_PLAN_PATH, "UITest WatchKit mirror")
     assert_completed_plan(SESSION_START_PLAN_PATH, "WatchKit session start")
+    assert_completed_plan(SESSION_FAILURE_PLAN_PATH, "WatchKit session failure UI")
 
 
 def test_heart_rate_streaming_query_is_retained_and_stopped():
@@ -129,6 +131,31 @@ def test_workout_session_start_avoids_optional_force_unwrap():
         )
 
 
+def test_workout_session_failure_resets_ui_without_sensitive_logs():
+    for relative_path in INTERFACE_CONTROLLERS:
+        source = (ROOT / relative_path).read_text()
+        assert_true(
+            "error.userInfo" not in source,
+            "{0} workout failures must not log error.userInfo".format(relative_path),
+        )
+        assert_true(
+            "workoutActive = false" in source,
+            "{0} workout failures must reset workoutActive".format(relative_path),
+        )
+        assert_true(
+            'startStopButton.setTitle("Start")' in source,
+            "{0} workout failures must restore the Start button title".format(relative_path),
+        )
+        assert_true(
+            'label.setText("cannot start")' in source,
+            "{0} workout failures must show visible failure text".format(relative_path),
+        )
+        assert_true(
+            'NSLog("Workout session failed")' in source,
+            "{0} workout failures must log a non-sensitive failure message".format(relative_path),
+        )
+
+
 def main():
     tests = [
         test_healthkit_plists_have_share_usage_description,
@@ -137,6 +164,7 @@ def main():
         test_heart_rate_streaming_query_is_retained_and_stopped,
         test_healthkit_update_handler_guards_anchor,
         test_workout_session_start_avoids_optional_force_unwrap,
+        test_workout_session_failure_resets_ui_without_sensitive_logs,
     ]
     for test in tests:
         test()

@@ -17,13 +17,13 @@ Priority:
 - Preserve the start/stop workout and heart-rate streaming flow
 - Keep HealthKit authorization visible
 - Avoid force-unwrapping workout session state while starting workouts
+- Reset visible workout controls when workout sessions fail
 - Avoid storing or uploading heart-rate samples by default
 - Treat Swift/watchOS project versions as legacy until documented
 
 Next priorities:
 
 - Add README setup notes for HealthKit entitlements and watchOS versions
-- Add user-visible handling for failed workout sessions
 - Add manual verification notes for device testing
 - Modernize HealthKit APIs in a dedicated pass
 
