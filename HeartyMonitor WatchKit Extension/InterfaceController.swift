@@ -50,7 +50,9 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
         let dataTypes = Set(arrayLiteral: quantityType)
         healthStore.requestAuthorizationToShareTypes(nil, readTypes: dataTypes) { (success, error) -> Void in
             if success == false {
-                self.displayNotAllowed()
+                dispatch_async(dispatch_get_main_queue()) {
+                    self.displayNotAllowed()
+                }
             }
         }
     }

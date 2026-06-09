@@ -10,6 +10,9 @@ UITEST_MIRROR_PLAN_PATH = ROOT / "docs" / "plans" / "2026-06-08-watchkit-uitest-
 SESSION_START_PLAN_PATH = ROOT / "docs" / "plans" / "2026-06-08-watchkit-session-start.md"
 SESSION_FAILURE_PLAN_PATH = ROOT / "docs" / "plans" / "2026-06-09-watchkit-session-failure-ui.md"
 SESSION_END_PLAN_PATH = ROOT / "docs" / "plans" / "2026-06-09-watchkit-session-end-ui.md"
+AUTHORIZATION_MAIN_THREAD_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-09-watchkit-authorization-main-thread.md"
+)
 INTERFACE_CONTROLLERS = [
     Path("HeartyMonitor WatchKit Extension/InterfaceController.swift"),
     Path("HeartyMonitorUITests/HeartyMonitor WatchKit Extension/InterfaceController.swift"),
@@ -80,6 +83,7 @@ def test_completed_plans_are_in_docs_plans():
     assert_completed_plan(SESSION_START_PLAN_PATH, "WatchKit session start")
     assert_completed_plan(SESSION_FAILURE_PLAN_PATH, "WatchKit session failure UI")
     assert_completed_plan(SESSION_END_PLAN_PATH, "WatchKit session end UI")
+    assert_completed_plan(AUTHORIZATION_MAIN_THREAD_PLAN_PATH, "WatchKit authorization main thread")
 
 
 def test_heart_rate_streaming_query_is_retained_and_stopped():
@@ -100,6 +104,31 @@ def test_heart_rate_streaming_query_is_retained_and_stopped():
         assert_true(
             "heartRateQuery = nil" in source or "self.heartRateQuery = nil" in source,
             "{0} workoutDidEnd must clear the retained query after stopping it".format(relative_path),
+        )
+
+
+def test_authorization_denial_updates_ui_on_main_queue():
+    for relative_path in INTERFACE_CONTROLLERS:
+        source = (ROOT / relative_path).read_text()
+        authorization_block = source.split(
+            "healthStore.requestAuthorizationToShareTypes", 1
+        )[1].split("func displayNotAllowed", 1)[0]
+        assert_true(
+            "if success == false" in authorization_block,
+            "{0} must handle denied HealthKit authorization".format(relative_path),
+        )
+        assert_true(
+            "dispatch_async(dispatch_get_main_queue())" in authorization_block,
+            "{0} must dispatch denied-authorization UI updates to the main queue".format(relative_path),
+        )
+        assert_true(
+            "self.displayNotAllowed()" in authorization_block,
+            "{0} must still show denied-authorization feedback".format(relative_path),
+        )
+        assert_true(
+            authorization_block.index("dispatch_async(dispatch_get_main_queue())")
+            < authorization_block.index("self.displayNotAllowed()"),
+            "{0} must dispatch before updating denied-authorization UI".format(relative_path),
         )
 
 
@@ -182,6 +211,7 @@ def main():
         test_healthkit_entitlements_are_enabled,
         test_completed_plans_are_in_docs_plans,
         test_heart_rate_streaming_query_is_retained_and_stopped,
+        test_authorization_denial_updates_ui_on_main_queue,
         test_healthkit_update_handler_guards_anchor,
         test_workout_session_start_avoids_optional_force_unwrap,
         test_workout_session_failure_resets_ui_without_sensitive_logs,
