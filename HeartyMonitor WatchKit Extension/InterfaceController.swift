@@ -62,25 +62,30 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
     }
     
     func workoutSession(workoutSession: HKWorkoutSession, didChangeToState toState: HKWorkoutSessionState, fromState: HKWorkoutSessionState, date: NSDate) {
-        switch toState {
-        case .Running:
-            workoutDidStart(date)
-        case .Ended:
-            workoutDidEnd(date)
-        default:
-            print("Unexpected state \(toState)")
+        dispatch_async(dispatch_get_main_queue()) {
+            switch toState {
+            case .Running:
+                self.workoutDidStart(date)
+            case .Ended:
+                self.workoutDidEnd(date)
+            default:
+                print("Unexpected state \(toState)")
+            }
         }
     }
     
     func workoutSession(workoutSession: HKWorkoutSession, didFailWithError error: NSError) {
-        workoutActive = false
-        startStopButton.setTitle("Start")
-        if let query = heartRateQuery {
-            healthStore.stopQuery(query)
-            heartRateQuery = nil
+        dispatch_async(dispatch_get_main_queue()) {
+            self.workoutActive = false
+            self.startStopButton.setTitle("Start")
+            if let query = self.heartRateQuery {
+                self.healthStore.stopQuery(query)
+                self.heartRateQuery = nil
+            }
+            self.workoutSession = nil
+            self.label.setText("cannot start")
+            NSLog("Workout session failed")
         }
-        label.setText("cannot start")
-        NSLog("Workout session failed")
     }
     
     func workoutDidStart(date : NSDate) {

@@ -19,6 +19,9 @@ QUERY_FAILURE_PLAN_PATH = (
 HEART_RATE_VALUE_PLAN_PATH = (
     ROOT / "docs" / "plans" / "2026-06-09-watchkit-heart-rate-value-bounds.md"
 )
+SESSION_DELEGATE_MAIN_THREAD_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-09-watchkit-session-delegate-main-thread.md"
+)
 INTERFACE_CONTROLLERS = [
     Path("HeartyMonitor WatchKit Extension/InterfaceController.swift"),
     Path("HeartyMonitorUITests/HeartyMonitor WatchKit Extension/InterfaceController.swift"),
@@ -92,6 +95,7 @@ def test_completed_plans_are_in_docs_plans():
     assert_completed_plan(AUTHORIZATION_MAIN_THREAD_PLAN_PATH, "WatchKit authorization main thread")
     assert_completed_plan(QUERY_FAILURE_PLAN_PATH, "WatchKit query start failure UI")
     assert_completed_plan(HEART_RATE_VALUE_PLAN_PATH, "WatchKit heart-rate value bounds")
+    assert_completed_plan(SESSION_DELEGATE_MAIN_THREAD_PLAN_PATH, "WatchKit session delegate main thread")
 
 
 def test_heart_rate_streaming_query_is_retained_and_stopped():
@@ -221,6 +225,44 @@ def test_workout_session_failure_resets_ui_without_sensitive_logs():
         )
 
 
+def test_workout_session_delegate_updates_ui_on_main_queue():
+    for relative_path in INTERFACE_CONTROLLERS:
+        source = (ROOT / relative_path).read_text()
+        state_method = source.split(
+            "func workoutSession(workoutSession: HKWorkoutSession, didChangeToState", 1
+        )[1].split(
+            "func workoutSession(workoutSession: HKWorkoutSession, didFailWithError", 1
+        )[0]
+        assert_true(
+            "dispatch_async(dispatch_get_main_queue())" in state_method,
+            "{0} workout state changes must dispatch UI work to the main queue".format(relative_path),
+        )
+        assert_true(
+            state_method.index("dispatch_async(dispatch_get_main_queue())")
+            < state_method.index("self.workoutDidStart(date)")
+            < state_method.index("self.workoutDidEnd(date)"),
+            "{0} workout start/end callbacks must run inside the main-queue block".format(relative_path),
+        )
+
+        failure_method = source.split(
+            "func workoutSession(workoutSession: HKWorkoutSession, didFailWithError", 1
+        )[1].split("func workoutDidStart", 1)[0]
+        assert_true(
+            "dispatch_async(dispatch_get_main_queue())" in failure_method,
+            "{0} workout failures must dispatch UI cleanup to the main queue".format(relative_path),
+        )
+        assert_true(
+            failure_method.index("dispatch_async(dispatch_get_main_queue())")
+            < failure_method.index("self.workoutActive = false")
+            < failure_method.index('self.label.setText("cannot start")'),
+            "{0} workout failure cleanup must run inside the main-queue block".format(relative_path),
+        )
+        assert_true(
+            "self.workoutSession = nil" in failure_method,
+            "{0} workout failures must clear the retained workout session".format(relative_path),
+        )
+
+
 def test_workout_session_end_resets_ui_state():
     for relative_path in INTERFACE_CONTROLLERS:
         source = (ROOT / relative_path).read_text()
@@ -265,6 +307,7 @@ def main():
         test_workout_session_start_avoids_optional_force_unwrap,
         test_heart_rate_query_failure_resets_ui_state,
         test_workout_session_failure_resets_ui_without_sensitive_logs,
+        test_workout_session_delegate_updates_ui_on_main_queue,
         test_workout_session_end_resets_ui_state,
         test_heart_rate_values_are_bounded_before_display,
     ]

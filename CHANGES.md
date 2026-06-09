@@ -2,6 +2,10 @@
 
 ## 2026-06-09
 
+- Dispatched WatchKit workout session start/end/failure UI cleanup onto the
+  main queue in both controller copies and clear retained failed sessions.
+- Added mirrored static contract coverage for workout session delegate UI
+  dispatch.
 - Bounded displayed WatchKit heart-rate sample values before converting them to
   `UInt16` in both controller copies.
 - Added mirrored static contract coverage for heart-rate display value bounds.
