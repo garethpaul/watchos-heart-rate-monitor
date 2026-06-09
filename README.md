@@ -52,6 +52,8 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 - `make verify` runs static WatchKit contract checks and attempts an Xcode build when `xcodebuild` is available.
 - `make check` runs `make verify` with bytecode cleanup before and after.
 - `python3 scripts/check_watchos_contracts.py` runs the HealthKit privacy, entitlement, plan, and query-lifecycle contracts.
+- Completed maintenance plans live under `docs/plans` and are checked by
+  `make check`.
 - Xcode's test action or `xcodebuild test` can be used with the appropriate scheme and destination on a macOS/Xcode workstation.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
@@ -72,6 +74,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - This looks like an Apple platform project or sample. Xcode, Swift, CocoaPods, and deployment target versions may need to match the original project era.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
+- See `docs/plans/2026-06-08-healthkit-privacy-strings.md` for the current
+  HealthKit privacy and query baseline.
 
 ## Contributing
 

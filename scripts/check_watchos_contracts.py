@@ -59,10 +59,12 @@ def test_healthkit_entitlements_are_enabled():
 
 def test_completed_plan_is_in_docs_plans():
     assert_true(PLAN_PATH.is_file(), "HealthKit privacy plan must live under docs/plans")
+    plan_text = PLAN_PATH.read_text()
     assert_true(
-        "status: completed" in PLAN_PATH.read_text(),
+        "status: completed" in plan_text.lower(),
         "HealthKit privacy plan must be marked completed",
     )
+    assert_true("make check" in plan_text, "HealthKit privacy plan must document make check verification")
 
 
 def test_heart_rate_streaming_query_is_retained_and_stopped():
