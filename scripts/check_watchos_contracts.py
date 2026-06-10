@@ -32,6 +32,9 @@ CI_PLAN_PATH = ROOT / "docs" / "plans" / "2026-06-10-ci-baseline.md"
 MAIN_QUEUE_STALE_CALLBACK_PLAN_PATH = (
     ROOT / "docs" / "plans" / "2026-06-10-main-queue-stale-heart-rate-callback.md"
 )
+LATEST_SAMPLE_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-10-latest-heart-rate-sample.md"
+)
 WORKFLOW_PATH = ROOT / ".github" / "workflows" / "check.yml"
 INTERFACE_CONTROLLERS = [
     Path("HeartyMonitor WatchKit Extension/InterfaceController.swift"),
@@ -111,6 +114,7 @@ def test_completed_plans_are_in_docs_plans():
     assert_completed_plan(HEART_RATE_INACTIVE_CALLBACK_PLAN_PATH, "WatchKit inactive heart-rate callbacks")
     assert_completed_plan(CI_PLAN_PATH, "GitHub Actions CI baseline")
     assert_completed_plan(MAIN_QUEUE_STALE_CALLBACK_PLAN_PATH, "main-queue stale heart-rate callback")
+    assert_completed_plan(LATEST_SAMPLE_PLAN_PATH, "latest heart-rate sample")
 
 
 def test_ci_workflow_runs_static_baseline():
@@ -405,6 +409,20 @@ def test_heart_rate_values_are_bounded_before_display():
         )
 
 
+def test_heart_rate_batches_display_latest_sample():
+    for relative_path in INTERFACE_CONTROLLERS:
+        source = (ROOT / relative_path).read_text()
+        method = source.split("func updateHeartRate", 1)[1].split("func updateDeviceName", 1)[0]
+        assert_true(
+            "guard let sample = heartRateSamples.last else{return}" in method,
+            "{0} must display the newest sample from each callback batch".format(relative_path),
+        )
+        assert_true(
+            "heartRateSamples.first" not in method,
+            "{0} must not discard newer samples by selecting the oldest batch value".format(relative_path),
+        )
+
+
 def test_main_queue_heart_rate_updates_recheck_workout_state():
     for relative_path in INTERFACE_CONTROLLERS:
         source = (ROOT / relative_path).read_text()
@@ -420,7 +438,7 @@ def test_main_queue_heart_rate_updates_recheck_workout_state():
         assert_true(
             method.index("dispatch_async(dispatch_get_main_queue())")
             < method.index("guard self.workoutActive else{return}")
-            < method.index("guard let sample = heartRateSamples.first else{return}"),
+            < method.index("guard let sample = heartRateSamples.last else{return}"),
             "{0} must recheck workout state before reading samples on the main queue".format(relative_path),
         )
 
@@ -442,6 +460,7 @@ def main():
         test_workout_session_delegate_updates_ui_on_main_queue,
         test_workout_session_end_resets_ui_state,
         test_heart_rate_values_are_bounded_before_display,
+        test_heart_rate_batches_display_latest_sample,
         test_main_queue_heart_rate_updates_recheck_workout_state,
     ]
     for test in tests:

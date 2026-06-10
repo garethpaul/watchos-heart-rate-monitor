@@ -106,6 +106,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - See `docs/plans/2026-06-10-ci-baseline.md` for hosted static verification.
 - See `docs/plans/2026-06-10-main-queue-stale-heart-rate-callback.md` for the
   mirrored guard against UI updates queued before a workout ends.
+- See `docs/plans/2026-06-10-latest-heart-rate-sample.md` for mirrored
+  latest-sample selection when HealthKit delivers callback batches.
 
 ## Contributing
 

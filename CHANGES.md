@@ -2,6 +2,8 @@
 
 ## 2026-06-10
 
+- Selected the newest heart-rate value from each HealthKit callback batch in
+  both WatchKit controller copies instead of displaying the oldest value.
 - Rechecked workout state inside queued main-thread heart-rate UI updates in
   both WatchKit controller copies so ended sessions cannot display stale data.
 - Made Make execution root-independent and fixed the static CI job to Ubuntu
