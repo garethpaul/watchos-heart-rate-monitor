@@ -40,6 +40,8 @@ HealthKit workout controls should remain disabled while health data is
 unavailable, authorization is denied, or authorization is still pending. Reports
 that show a workout can be started without successful HealthKit authorization
 should include the device or simulator state used to reproduce it.
+Queued heart-rate UI work must recheck workout state on the main queue so a
+sample cannot reappear after session cleanup.
 
 ## Dependency and Supply Chain Security
 

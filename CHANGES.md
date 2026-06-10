@@ -2,6 +2,10 @@
 
 ## 2026-06-10
 
+- Rechecked workout state inside queued main-thread heart-rate UI updates in
+  both WatchKit controller copies so ended sessions cannot display stale data.
+- Made Make execution root-independent and fixed the static CI job to Ubuntu
+  24.04 with exact action release annotations.
 - Added a pinned, read-only GitHub Actions matrix for Python 3.10, 3.12, and
   3.14 that runs the static `make check` baseline.
 

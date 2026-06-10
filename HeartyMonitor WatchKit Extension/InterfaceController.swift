@@ -170,6 +170,7 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
         guard let heartRateSamples = samples as? [HKQuantitySample] else {return}
         
         dispatch_async(dispatch_get_main_queue()) {
+            guard self.workoutActive else{return}
             guard let sample = heartRateSamples.first else{return}
             let value = sample.quantity.doubleValueForUnit(self.heartRateUnit)
             guard value >= 0 && value <= 300 else{return}

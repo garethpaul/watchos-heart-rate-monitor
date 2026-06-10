@@ -24,6 +24,7 @@ Priority:
 - Reset visible workout controls when workout sessions fail
 - Reset visible workout controls when workout sessions end normally
 - Ignore heart-rate callbacks after workouts are inactive
+- Recheck workout state before queued heart-rate UI updates
 - Ignore out-of-range heart-rate values before display conversion
 - Avoid storing or uploading heart-rate samples by default
 - Keep GitHub Actions running the static `make check` baseline
