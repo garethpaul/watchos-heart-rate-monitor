@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-10
+
+- Added a pinned, read-only GitHub Actions matrix for Python 3.10, 3.12, and
+  3.14 that runs the static `make check` baseline.
+
 ## 2026-06-09
 
 - Ignored delayed heart-rate query callbacks after workouts are inactive in

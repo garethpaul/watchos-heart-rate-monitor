@@ -26,6 +26,7 @@ Priority:
 - Ignore heart-rate callbacks after workouts are inactive
 - Ignore out-of-range heart-rate values before display conversion
 - Avoid storing or uploading heart-rate samples by default
+- Keep GitHub Actions running the static `make check` baseline
 - Treat Swift/watchOS project versions as legacy until documented
 
 Next priorities:

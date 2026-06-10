@@ -58,6 +58,8 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   and workout session-failure/session-end contracts.
 - Completed maintenance plans live under `docs/plans` and are checked by
   `make check`.
+- GitHub Actions runs the same static contracts on Python 3.10, 3.12, and 3.14
+  with read-only permissions and immutable action pins.
 - Xcode's test action or `xcodebuild test` can be used with the appropriate scheme and destination on a macOS/Xcode workstation.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
@@ -100,6 +102,7 @@ When the required SDK or runtime is unavailable, use static checks and source re
   mirrored workout session delegate UI dispatch coverage.
 - See `docs/plans/2026-06-09-watchkit-inactive-heart-rate-callbacks.md` for
   mirrored guards that ignore heart-rate callbacks after workouts are inactive.
+- See `docs/plans/2026-06-10-ci-baseline.md` for hosted static verification.
 
 ## Contributing
 
