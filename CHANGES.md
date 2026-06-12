@@ -1,5 +1,11 @@
 # Changes
 
+## 2026-06-12
+
+- Ignored queued HealthKit authorization UI work after the WatchKit interface
+  deactivates, in both source and UI-test mirror controllers.
+- Added lifecycle-ordering and exact mirror-synchronization contracts.
+
 ## 2026-06-10
 
 - Selected the newest heart-rate value from each HealthKit callback batch in

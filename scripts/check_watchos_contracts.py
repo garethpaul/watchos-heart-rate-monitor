@@ -37,6 +37,9 @@ MAIN_QUEUE_STALE_CALLBACK_PLAN_PATH = (
 LATEST_SAMPLE_PLAN_PATH = (
     ROOT / "docs" / "plans" / "2026-06-10-latest-heart-rate-sample.md"
 )
+AUTHORIZATION_LIFECYCLE_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-12-authorization-lifecycle-guard.md"
+)
 WORKFLOW_PATH = ROOT / ".github" / "workflows" / "check.yml"
 INTERFACE_CONTROLLERS = [
     Path("HeartyMonitor WatchKit Extension/InterfaceController.swift"),
@@ -117,6 +120,7 @@ def test_completed_plans_are_in_docs_plans():
     assert_completed_plan(CI_PLAN_PATH, "GitHub Actions CI baseline")
     assert_completed_plan(MAIN_QUEUE_STALE_CALLBACK_PLAN_PATH, "main-queue stale heart-rate callback")
     assert_completed_plan(LATEST_SAMPLE_PLAN_PATH, "latest heart-rate sample")
+    assert_completed_plan(AUTHORIZATION_LIFECYCLE_PLAN_PATH, "authorization lifecycle guard")
 
 
 def test_ci_workflow_runs_static_baseline():
@@ -235,6 +239,49 @@ def test_healthkit_authorization_controls_start_button_state():
             < authorization_block.index("self.startStopButton.setEnabled(true)"),
             "{0} must re-enable Start on the main queue".format(relative_path),
         )
+
+
+def test_authorization_callbacks_ignore_inactive_interfaces():
+    sources = []
+    for relative_path in INTERFACE_CONTROLLERS:
+        source = (ROOT / relative_path).read_text()
+        sources.append(source)
+        will_activate = source.split("override func willActivate()", 1)[1].split(
+            "override func didDeactivate()", 1
+        )[0]
+        authorization_block = will_activate.split(
+            "healthStore.requestAuthorizationToShareTypes", 1
+        )[1]
+        did_deactivate = source.split("override func didDeactivate()", 1)[1].split(
+            "func displayNotAllowed", 1
+        )[0]
+
+        assert_true(
+            "var interfaceActive = false" in source,
+            "{0} must track interface lifecycle state".format(relative_path),
+        )
+        assert_true(
+            will_activate.index("interfaceActive = true")
+            < will_activate.index("healthStore.requestAuthorizationToShareTypes"),
+            "{0} must mark activation before requesting authorization".format(relative_path),
+        )
+        assert_true(
+            "guard self.interfaceActive else { return }" in authorization_block,
+            "{0} must ignore stale authorization UI work".format(relative_path),
+        )
+        assert_true(
+            authorization_block.index("dispatch_async(dispatch_get_main_queue())")
+            < authorization_block.index("guard self.interfaceActive else { return }")
+            < authorization_block.index("if success == true"),
+            "{0} must recheck lifecycle state on the main queue before UI updates".format(relative_path),
+        )
+        assert_true(
+            did_deactivate.index("interfaceActive = false")
+            < did_deactivate.index("super.didDeactivate()"),
+            "{0} must invalidate callbacks during deactivation".format(relative_path),
+        )
+
+    assert_true(sources[0] == sources[1], "WatchKit source and UI-test mirror controllers must remain identical")
 
 
 def test_healthkit_update_handler_guards_anchor():
@@ -447,6 +494,7 @@ def main():
         test_heart_rate_streaming_query_is_retained_and_stopped,
         test_authorization_denial_updates_ui_on_main_queue,
         test_healthkit_authorization_controls_start_button_state,
+        test_authorization_callbacks_ignore_inactive_interfaces,
         test_healthkit_update_handler_guards_anchor,
         test_heart_rate_callbacks_ignore_inactive_workouts,
         test_workout_session_start_avoids_optional_force_unwrap,
