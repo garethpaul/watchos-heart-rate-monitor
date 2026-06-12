@@ -22,6 +22,7 @@
 - Full baseline: `make check`
 - Combined verification: `make verify`
 - Lint/static checks: `make lint`
+- Workflow contract mutations: `make contract-test`
 - Tests: `make test`
 - Build: `make build`
 - Local Apple development: `open HeartyMonitor.xcodeproj`
@@ -37,6 +38,8 @@
 - Test-related files detected: `docs/plans/2026-06-08-watchkit-uitest-query-mirror.md`, `HeartyMonitorTests/HeartyMonitorTests.swift`, `HeartyMonitorUITests/HeartyMonitorTests/HeartyMonitorTests.swift`, `HeartyMonitorUITests/HeartyMonitorUITests.swift`
 - Start with the narrowest relevant test or Make target, then run `make check` before handing off if the change is not documentation-only.
 - Keep README verification notes in sync when commands, fixtures, or supported toolchains change.
+- Keep hosted verification read-only and credential-free with immutable action
+  pins; update structural workflow mutations with intentional policy changes.
 
 ## PR / change guidance
 

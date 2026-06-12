@@ -3,11 +3,6 @@
 <!-- README-OVERVIEW-IMAGE -->
 ![Project overview](docs/readme-overview.svg)
 
-## Device Preview
-
-<!-- DEVICE-PREVIEW-IMAGE -->
-![Device preview](docs/device-preview.svg)
-
 ## Overview
 
 `garethpaul/watchos-heart-rate-monitor` is an Apple platform application or Swift sample. HRM for WatchOS
@@ -59,12 +54,14 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 - `python3 scripts/check_watchos_contracts.py` runs the HealthKit privacy,
   entitlement, plan, query-lifecycle, authorization UI-thread, workout
   authorization Start-button state, session-start, workout delegate UI-thread,
-  query-start failure, inactive heart-rate callback, heart-rate value-bound,
-  and workout session-failure/session-end contracts.
+  query-start failure, inactive and queued stale heart-rate callbacks,
+  heart-rate value-bound, and workout session-failure/session-end contracts.
 - Completed maintenance plans live under `docs/plans` and are checked by
   `make check`.
-- GitHub Actions runs the same static `make check` baseline with Python 3.12
-  for pushes and pull requests.
+- GitHub Actions runs the same static contracts on Python 3.10, 3.12, and 3.14
+  on Ubuntu 24.04 with read-only permissions, credential-free checkout,
+  immutable action pins, and cancellation for superseded runs. Dependency-free
+  mutations reject contradictory credential settings and policy regressions.
 - Xcode's test action or `xcodebuild test` can be used with the appropriate scheme and destination on a macOS/Xcode workstation.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
@@ -107,8 +104,11 @@ When the required SDK or runtime is unavailable, use static checks and source re
   mirrored workout session delegate UI dispatch coverage.
 - See `docs/plans/2026-06-09-watchkit-inactive-heart-rate-callbacks.md` for
   mirrored guards that ignore heart-rate callbacks after workouts are inactive.
-- See `docs/plans/2026-06-10-ci-baseline.md` for the GitHub Actions static
-  baseline.
+- See `docs/plans/2026-06-10-ci-baseline.md` for hosted static verification.
+- See `docs/plans/2026-06-10-main-queue-stale-heart-rate-callback.md` for the
+  mirrored guard against UI updates queued before a workout ends.
+- See `docs/plans/2026-06-10-latest-heart-rate-sample.md` for mirrored
+  latest-sample selection when HealthKit delivers callback batches.
 
 ## Contributing
 

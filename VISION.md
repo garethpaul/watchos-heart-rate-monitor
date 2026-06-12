@@ -24,9 +24,13 @@ Priority:
 - Reset visible workout controls when workout sessions fail
 - Reset visible workout controls when workout sessions end normally
 - Ignore heart-rate callbacks after workouts are inactive
+- Recheck workout state before queued heart-rate UI updates
+- Display the newest sample when HealthKit delivers heart-rate batches
 - Ignore out-of-range heart-rate values before display conversion
 - Avoid storing or uploading heart-rate samples by default
 - Keep GitHub Actions running the static `make check` baseline
+- Keep hosted verification read-only, credential-free, pinned, and protected
+  against structural workflow regressions
 - Treat Swift/watchOS project versions as legacy until documented
 
 Next priorities:

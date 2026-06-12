@@ -3,6 +3,8 @@
 import plistlib
 from pathlib import Path
 
+from workflow_contract import validate as validate_workflow
+
 
 ROOT = Path(__file__).resolve().parents[1]
 HEALTHKIT_PLAN_PATH = ROOT / "docs" / "plans" / "2026-06-08-healthkit-privacy-strings.md"
@@ -29,6 +31,12 @@ HEART_RATE_INACTIVE_CALLBACK_PLAN_PATH = (
     ROOT / "docs" / "plans" / "2026-06-09-watchkit-inactive-heart-rate-callbacks.md"
 )
 CI_PLAN_PATH = ROOT / "docs" / "plans" / "2026-06-10-ci-baseline.md"
+MAIN_QUEUE_STALE_CALLBACK_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-10-main-queue-stale-heart-rate-callback.md"
+)
+LATEST_SAMPLE_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-10-latest-heart-rate-sample.md"
+)
 WORKFLOW_PATH = ROOT / ".github" / "workflows" / "check.yml"
 INTERFACE_CONTROLLERS = [
     Path("HeartyMonitor WatchKit Extension/InterfaceController.swift"),
@@ -107,14 +115,26 @@ def test_completed_plans_are_in_docs_plans():
     assert_completed_plan(SESSION_DELEGATE_MAIN_THREAD_PLAN_PATH, "WatchKit session delegate main thread")
     assert_completed_plan(HEART_RATE_INACTIVE_CALLBACK_PLAN_PATH, "WatchKit inactive heart-rate callbacks")
     assert_completed_plan(CI_PLAN_PATH, "GitHub Actions CI baseline")
+    assert_completed_plan(MAIN_QUEUE_STALE_CALLBACK_PLAN_PATH, "main-queue stale heart-rate callback")
+    assert_completed_plan(LATEST_SAMPLE_PLAN_PATH, "latest heart-rate sample")
 
 
 def test_ci_workflow_runs_static_baseline():
     assert_true(WORKFLOW_PATH.is_file(), "GitHub Actions check workflow must exist")
     workflow = WORKFLOW_PATH.read_text()
-    assert_true("actions/setup-python@v5" in workflow, "CI must install Python")
-    assert_true('python-version: "3.12"' in workflow, "CI must use Python 3.12")
-    assert_true("make check" in workflow, "CI must run make check")
+    errors = validate_workflow(workflow)
+    assert_true(not errors, "CI workflow must {0}".format(errors[0]) if errors else "")
+
+    makefile = (ROOT / "Makefile").read_text()
+    assert_true("ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))" in makefile, "Makefile must resolve the repository root")
+    assert_true("PROJECT := $(ROOT)/HeartyMonitor.xcodeproj" in makefile, "Makefile must use the rooted project path")
+    assert_true("$(ROOT)/scripts/check_watchos_contracts.py" in makefile, "Makefile must use the rooted contract path")
+    assert_true("WORKFLOW_CONTRACT_SCRIPT" in makefile, "Makefile must define the workflow mutation checker")
+    assert_true('find "$(ROOT)"' in makefile, "Makefile cleanup must stay inside the repository")
+    assert_true(
+        '$(MAKE) -f "$(abspath $(lastword $(MAKEFILE_LIST)))" clean' in makefile,
+        "Makefile final cleanup must remain root-independent",
+    )
 
     for relative_path in ["README.md", "VISION.md", "SECURITY.md", "CHANGES.md"]:
         doc = (ROOT / relative_path).read_text()
@@ -384,6 +404,40 @@ def test_heart_rate_values_are_bounded_before_display():
         )
 
 
+def test_heart_rate_batches_display_latest_sample():
+    for relative_path in INTERFACE_CONTROLLERS:
+        source = (ROOT / relative_path).read_text()
+        method = source.split("func updateHeartRate", 1)[1].split("func updateDeviceName", 1)[0]
+        assert_true(
+            "guard let sample = heartRateSamples.last else{return}" in method,
+            "{0} must display the newest sample from each callback batch".format(relative_path),
+        )
+        assert_true(
+            "heartRateSamples.first" not in method,
+            "{0} must not discard newer samples by selecting the oldest batch value".format(relative_path),
+        )
+
+
+def test_main_queue_heart_rate_updates_recheck_workout_state():
+    for relative_path in INTERFACE_CONTROLLERS:
+        source = (ROOT / relative_path).read_text()
+        method = source.split("func updateHeartRate", 1)[1].split("func updateDeviceName", 1)[0]
+        assert_true(
+            "dispatch_async(dispatch_get_main_queue())" in method,
+            "{0} heart-rate UI updates must use the main queue".format(relative_path),
+        )
+        assert_true(
+            "guard self.workoutActive else{return}" in method,
+            "{0} must reject stale heart-rate UI work after queueing".format(relative_path),
+        )
+        assert_true(
+            method.index("dispatch_async(dispatch_get_main_queue())")
+            < method.index("guard self.workoutActive else{return}")
+            < method.index("guard let sample = heartRateSamples.last else{return}"),
+            "{0} must recheck workout state before reading samples on the main queue".format(relative_path),
+        )
+
+
 def main():
     tests = [
         test_healthkit_plists_have_share_usage_description,
@@ -401,6 +455,8 @@ def main():
         test_workout_session_delegate_updates_ui_on_main_queue,
         test_workout_session_end_resets_ui_state,
         test_heart_rate_values_are_bounded_before_display,
+        test_heart_rate_batches_display_latest_sample,
+        test_main_queue_heart_rate_updates_recheck_workout_state,
     ]
     for test in tests:
         test()

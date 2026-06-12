@@ -2,8 +2,18 @@
 
 ## 2026-06-10
 
-- Added a GitHub Actions workflow that installs Python 3.12 and runs the static
-  `make check` baseline for pushes and pull requests.
+- Selected the newest heart-rate value from each HealthKit callback batch in
+  both WatchKit controller copies instead of displaying the oldest value.
+- Rechecked workout state inside queued main-thread heart-rate UI updates in
+  both WatchKit controller copies so ended sessions cannot display stale data.
+- Made Make execution root-independent and fixed the static CI job to Ubuntu
+  24.04 with exact action release annotations.
+- Kept the final bytecode cleanup root-independent when `make check` is invoked
+  through an absolute Makefile path from another working directory.
+- Added a pinned, read-only GitHub Actions matrix for Python 3.10, 3.12, and
+  3.14 that runs the static `make check` baseline with credential-free checkout.
+- Added dependency-free workflow tests that reject contradictory or relocated
+  credential settings and other CI policy regressions.
 
 ## 2026-06-09
 

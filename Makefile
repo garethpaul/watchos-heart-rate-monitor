@@ -1,21 +1,27 @@
 PYTHON ?= python3
 XCODEBUILD ?= xcodebuild
-PROJECT := HeartyMonitor.xcodeproj
+ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+PROJECT := $(ROOT)/HeartyMonitor.xcodeproj
 SCHEME := HeartyMonitor
 CONTRACT_SCRIPT := \
-	scripts/check_watchos_contracts.py
+	$(ROOT)/scripts/check_watchos_contracts.py
+WORKFLOW_CONTRACT_SCRIPT := \
+	$(ROOT)/scripts/test_workflow_contract.py
 
-.PHONY: clean lint test build verify check
+.PHONY: clean lint test contract-test build verify check
 
 clean:
-	find . -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete
-	find . -type d -name '__pycache__' -prune -exec rm -rf {} +
+	find "$(ROOT)" -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete
+	find "$(ROOT)" -type d -name '__pycache__' -prune -exec rm -rf {} +
 
 lint:
 	PYTHONDONTWRITEBYTECODE=1 $(PYTHON) -m py_compile $(CONTRACT_SCRIPT)
 
 test:
 	PYTHONDONTWRITEBYTECODE=1 $(PYTHON) $(CONTRACT_SCRIPT)
+
+contract-test:
+	PYTHONDONTWRITEBYTECODE=1 $(PYTHON) $(WORKFLOW_CONTRACT_SCRIPT)
 
 build:
 	@if command -v $(XCODEBUILD) >/dev/null 2>&1; then \
@@ -24,7 +30,7 @@ build:
 		echo "Skipping xcodebuild: xcodebuild is not installed."; \
 	fi
 
-verify: lint test build
+verify: lint test contract-test build
 
 check: clean verify
-	$(MAKE) clean
+	$(MAKE) -f "$(abspath $(lastword $(MAKEFILE_LIST)))" clean
