@@ -28,6 +28,8 @@ SESSION_DELEGATE_MAIN_THREAD_PLAN_PATH = (
 HEART_RATE_INACTIVE_CALLBACK_PLAN_PATH = (
     ROOT / "docs" / "plans" / "2026-06-09-watchkit-inactive-heart-rate-callbacks.md"
 )
+CI_PLAN_PATH = ROOT / "docs" / "plans" / "2026-06-10-ci-baseline.md"
+WORKFLOW_PATH = ROOT / ".github" / "workflows" / "check.yml"
 INTERFACE_CONTROLLERS = [
     Path("HeartyMonitor WatchKit Extension/InterfaceController.swift"),
     Path("HeartyMonitorUITests/HeartyMonitor WatchKit Extension/InterfaceController.swift"),
@@ -104,6 +106,22 @@ def test_completed_plans_are_in_docs_plans():
     assert_completed_plan(HEART_RATE_VALUE_PLAN_PATH, "WatchKit heart-rate value bounds")
     assert_completed_plan(SESSION_DELEGATE_MAIN_THREAD_PLAN_PATH, "WatchKit session delegate main thread")
     assert_completed_plan(HEART_RATE_INACTIVE_CALLBACK_PLAN_PATH, "WatchKit inactive heart-rate callbacks")
+    assert_completed_plan(CI_PLAN_PATH, "GitHub Actions CI baseline")
+
+
+def test_ci_workflow_runs_static_baseline():
+    assert_true(WORKFLOW_PATH.is_file(), "GitHub Actions check workflow must exist")
+    workflow = WORKFLOW_PATH.read_text()
+    assert_true("actions/setup-python@v5" in workflow, "CI must install Python")
+    assert_true('python-version: "3.12"' in workflow, "CI must use Python 3.12")
+    assert_true("make check" in workflow, "CI must run make check")
+
+    for relative_path in ["README.md", "VISION.md", "SECURITY.md", "CHANGES.md"]:
+        doc = (ROOT / relative_path).read_text()
+        assert_true(
+            "GitHub Actions" in doc,
+            "{0} must document the hosted static baseline".format(relative_path),
+        )
 
 
 def test_heart_rate_streaming_query_is_retained_and_stopped():
@@ -371,6 +389,7 @@ def main():
         test_healthkit_plists_have_share_usage_description,
         test_healthkit_entitlements_are_enabled,
         test_completed_plans_are_in_docs_plans,
+        test_ci_workflow_runs_static_baseline,
         test_heart_rate_streaming_query_is_retained_and_stopped,
         test_authorization_denial_updates_ui_on_main_queue,
         test_healthkit_authorization_controls_start_button_state,
