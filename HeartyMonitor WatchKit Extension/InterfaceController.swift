@@ -22,6 +22,7 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
     
     //State of the app - is the workout activated
     var workoutActive = false
+    var interfaceActive = false
     
     // define the activity type and location
     var workoutSession : HKWorkoutSession?
@@ -36,6 +37,7 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
     
     override func willActivate() {
         super.willActivate()
+        interfaceActive = true
         
         guard HKHealthStore.isHealthDataAvailable() == true else {
             label.setText("not available")
@@ -52,6 +54,7 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
         startStopButton.setEnabled(false)
         healthStore.requestAuthorizationToShareTypes(nil, readTypes: dataTypes) { (success, error) -> Void in
             dispatch_async(dispatch_get_main_queue()) {
+                guard self.interfaceActive else { return }
                 if success == true {
                     self.startStopButton.setEnabled(true)
                 } else if success == false {
@@ -59,6 +62,11 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
                 }
             }
         }
+    }
+
+    override func didDeactivate() {
+        interfaceActive = false
+        super.didDeactivate()
     }
     
     func displayNotAllowed() {

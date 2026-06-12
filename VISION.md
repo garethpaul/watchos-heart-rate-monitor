@@ -29,6 +29,8 @@ Priority:
 - Ignore out-of-range heart-rate values before display conversion
 - Avoid storing or uploading heart-rate samples by default
 - Keep GitHub Actions running the static `make check` baseline
+- Keep hosted verification read-only, credential-free, pinned, and protected
+  against structural workflow regressions
 - Treat Swift/watchOS project versions as legacy until documented
 
 Next priorities:

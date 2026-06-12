@@ -3,6 +3,8 @@
 import plistlib
 from pathlib import Path
 
+from workflow_contract import validate as validate_workflow
+
 
 ROOT = Path(__file__).resolve().parents[1]
 HEALTHKIT_PLAN_PATH = ROOT / "docs" / "plans" / "2026-06-08-healthkit-privacy-strings.md"
@@ -34,6 +36,9 @@ MAIN_QUEUE_STALE_CALLBACK_PLAN_PATH = (
 )
 LATEST_SAMPLE_PLAN_PATH = (
     ROOT / "docs" / "plans" / "2026-06-10-latest-heart-rate-sample.md"
+)
+AUTHORIZATION_LIFECYCLE_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-12-authorization-lifecycle-guard.md"
 )
 WORKFLOW_PATH = ROOT / ".github" / "workflows" / "check.yml"
 INTERFACE_CONTROLLERS = [
@@ -115,31 +120,25 @@ def test_completed_plans_are_in_docs_plans():
     assert_completed_plan(CI_PLAN_PATH, "GitHub Actions CI baseline")
     assert_completed_plan(MAIN_QUEUE_STALE_CALLBACK_PLAN_PATH, "main-queue stale heart-rate callback")
     assert_completed_plan(LATEST_SAMPLE_PLAN_PATH, "latest heart-rate sample")
+    assert_completed_plan(AUTHORIZATION_LIFECYCLE_PLAN_PATH, "authorization lifecycle guard")
 
 
 def test_ci_workflow_runs_static_baseline():
     assert_true(WORKFLOW_PATH.is_file(), "GitHub Actions check workflow must exist")
     workflow = WORKFLOW_PATH.read_text()
-    assert_true("permissions:\n  contents: read" in workflow, "CI permissions must be read-only")
-    assert_true("concurrency:" in workflow, "CI must cancel superseded runs")
-    assert_true("cancel-in-progress: true" in workflow, "CI must cancel superseded runs")
-    assert_true("runs-on: ubuntu-24.04" in workflow, "CI must use a fixed Ubuntu runner")
-    assert_true("timeout-minutes: 10" in workflow, "CI runtime must be bounded")
-    assert_true('python-version: ["3.10", "3.12", "3.14"]' in workflow, "CI must cover supported Python versions")
-    assert_true("actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" in workflow, "CI must pin checkout")
-    assert_true("actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405" in workflow, "CI must pin Python setup")
-    assert_true("workflow_dispatch:" in workflow, "CI must support manual verification")
-    assert_true("make check" in workflow, "CI must run make check")
-    assert_true("@v" not in workflow, "CI actions must use immutable commits")
-    assert_true("ubuntu-latest" not in workflow, "CI must not use a floating Ubuntu runner")
-    assert_true("# v6.0.3" in workflow, "checkout pin annotation must identify the exact release")
-    assert_true("# v6.2.0" in workflow, "setup-python pin annotation must identify the exact release")
+    errors = validate_workflow(workflow)
+    assert_true(not errors, "CI workflow must {0}".format(errors[0]) if errors else "")
 
     makefile = (ROOT / "Makefile").read_text()
     assert_true("ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))" in makefile, "Makefile must resolve the repository root")
     assert_true("PROJECT := $(ROOT)/HeartyMonitor.xcodeproj" in makefile, "Makefile must use the rooted project path")
     assert_true("$(ROOT)/scripts/check_watchos_contracts.py" in makefile, "Makefile must use the rooted contract path")
+    assert_true("WORKFLOW_CONTRACT_SCRIPT" in makefile, "Makefile must define the workflow mutation checker")
     assert_true('find "$(ROOT)"' in makefile, "Makefile cleanup must stay inside the repository")
+    assert_true(
+        '$(MAKE) -f "$(abspath $(lastword $(MAKEFILE_LIST)))" clean' in makefile,
+        "Makefile final cleanup must remain root-independent",
+    )
 
     for relative_path in ["README.md", "VISION.md", "SECURITY.md", "CHANGES.md"]:
         doc = (ROOT / relative_path).read_text()
@@ -240,6 +239,49 @@ def test_healthkit_authorization_controls_start_button_state():
             < authorization_block.index("self.startStopButton.setEnabled(true)"),
             "{0} must re-enable Start on the main queue".format(relative_path),
         )
+
+
+def test_authorization_callbacks_ignore_inactive_interfaces():
+    sources = []
+    for relative_path in INTERFACE_CONTROLLERS:
+        source = (ROOT / relative_path).read_text()
+        sources.append(source)
+        will_activate = source.split("override func willActivate()", 1)[1].split(
+            "override func didDeactivate()", 1
+        )[0]
+        authorization_block = will_activate.split(
+            "healthStore.requestAuthorizationToShareTypes", 1
+        )[1]
+        did_deactivate = source.split("override func didDeactivate()", 1)[1].split(
+            "func displayNotAllowed", 1
+        )[0]
+
+        assert_true(
+            "var interfaceActive = false" in source,
+            "{0} must track interface lifecycle state".format(relative_path),
+        )
+        assert_true(
+            will_activate.index("interfaceActive = true")
+            < will_activate.index("healthStore.requestAuthorizationToShareTypes"),
+            "{0} must mark activation before requesting authorization".format(relative_path),
+        )
+        assert_true(
+            "guard self.interfaceActive else { return }" in authorization_block,
+            "{0} must ignore stale authorization UI work".format(relative_path),
+        )
+        assert_true(
+            authorization_block.index("dispatch_async(dispatch_get_main_queue())")
+            < authorization_block.index("guard self.interfaceActive else { return }")
+            < authorization_block.index("if success == true"),
+            "{0} must recheck lifecycle state on the main queue before UI updates".format(relative_path),
+        )
+        assert_true(
+            did_deactivate.index("interfaceActive = false")
+            < did_deactivate.index("super.didDeactivate()"),
+            "{0} must invalidate callbacks during deactivation".format(relative_path),
+        )
+
+    assert_true(sources[0] == sources[1], "WatchKit source and UI-test mirror controllers must remain identical")
 
 
 def test_healthkit_update_handler_guards_anchor():
@@ -452,6 +494,7 @@ def main():
         test_heart_rate_streaming_query_is_retained_and_stopped,
         test_authorization_denial_updates_ui_on_main_queue,
         test_healthkit_authorization_controls_start_button_state,
+        test_authorization_callbacks_ignore_inactive_interfaces,
         test_healthkit_update_handler_guards_anchor,
         test_heart_rate_callbacks_ignore_inactive_workouts,
         test_workout_session_start_avoids_optional_force_unwrap,

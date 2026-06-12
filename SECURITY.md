@@ -30,7 +30,9 @@ Helpful reports include:
 - Review found file, document, data, or media parsing flows; changes in those areas should receive security-focused review before merge.
 - No primary dependency manifest was detected in the repository root. If dependencies are added later, include a manifest and prefer reproducible installation instructions.
 - GitHub Actions runs the static `make check` baseline across maintained Python versions; keep
-  that hosted path free of real HealthKit samples or device identifiers.
+  that hosted path free of real HealthKit samples or device identifiers. The
+  workflow uses read-only permissions, credential-free checkout, immutable
+  action pins, bounded runtime, and structural policy mutation tests.
 
 ## Mobile Privacy Notes
 

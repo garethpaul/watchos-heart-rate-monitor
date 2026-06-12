@@ -59,8 +59,9 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 - Completed maintenance plans live under `docs/plans` and are checked by
   `make check`.
 - GitHub Actions runs the same static contracts on Python 3.10, 3.12, and 3.14
-  on Ubuntu 24.04 with read-only permissions, immutable action pins, and
-  cancellation for superseded runs.
+  on Ubuntu 24.04 with read-only permissions, credential-free checkout,
+  immutable action pins, and cancellation for superseded runs. Dependency-free
+  mutations reject contradictory credential settings and policy regressions.
 - Xcode's test action or `xcodebuild test` can be used with the appropriate scheme and destination on a macOS/Xcode workstation.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
@@ -108,6 +109,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   mirrored guard against UI updates queued before a workout ends.
 - See `docs/plans/2026-06-10-latest-heart-rate-sample.md` for mirrored
   latest-sample selection when HealthKit delivers callback batches.
+- See `docs/plans/2026-06-12-authorization-lifecycle-guard.md` for the mirrored
+  guard against stale authorization UI work after interface deactivation.
 
 ## Contributing
 
