@@ -111,6 +111,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   latest-sample selection when HealthKit delivers callback batches.
 - See `docs/plans/2026-06-12-authorization-lifecycle-guard.md` for the mirrored
   guard against stale authorization UI work after interface deactivation.
+- See `docs/plans/2026-06-13-stale-workout-session-callbacks.md` for rejecting
+  obsolete session callbacks and late workout starts on the main queue.
 
 ## Contributing
 

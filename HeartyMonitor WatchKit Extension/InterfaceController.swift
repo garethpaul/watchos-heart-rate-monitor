@@ -76,8 +76,10 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
     
     func workoutSession(workoutSession: HKWorkoutSession, didChangeToState toState: HKWorkoutSessionState, fromState: HKWorkoutSessionState, date: NSDate) {
         dispatch_async(dispatch_get_main_queue()) {
+            guard self.workoutSession === workoutSession else { return }
             switch toState {
             case .Running:
+                guard self.workoutActive else { return }
                 self.workoutDidStart(date)
             case .Ended:
                 self.workoutDidEnd(date)
@@ -89,6 +91,7 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
     
     func workoutSession(workoutSession: HKWorkoutSession, didFailWithError error: NSError) {
         dispatch_async(dispatch_get_main_queue()) {
+            guard self.workoutSession === workoutSession else { return }
             self.workoutActive = false
             self.startStopButton.setTitle("Start")
             if let query = self.heartRateQuery {
