@@ -1,6 +1,6 @@
 # Authorization Callback Generation Guard
 
-Status: Planned
+Status: Completed
 
 ## Problem
 
@@ -24,7 +24,7 @@ the Start control for the wrong activation.
 
 ## Implementation
 
-1. Add a bounded integer generation property beside the existing interface
+1. Add an integer generation property beside the existing interface
    lifecycle state in both mirrored controllers.
 2. Advance and capture the generation in `willActivate()` before the
    asynchronous authorization request.
@@ -35,15 +35,20 @@ the Start control for the wrong activation.
 
 ## Verification
 
-- Run the focused authorization-generation contract and hostile source
-  mutations under explicit timeouts.
-- Run local and external-working-directory `make check` under explicit
-  timeouts.
-- Validate Python syntax, workflow YAML, project XML/plists, mirrored source,
-  intended paths, generated artifacts, conflict markers, whitespace, and
-  changed-line credential patterns.
-- Record that Xcode compilation, simulator execution, and live HealthKit
-  authorization remain unavailable on this Linux host.
+- The focused inactive-interface and activation-generation contracts passed for
+  both mirrored controllers.
+- Eight hostile source mutations covering missing state, missing increments,
+  missing capture, missing comparison, off-main-queue comparison, late capture,
+  deactivation invalidation, and mirror divergence were rejected.
+- Final local and external-working-directory `make check` runs passed under
+  explicit three-minute timeouts with 20 watchOS contracts and all 17 workflow
+  mutations.
+- Python syntax and mirrored source validation passed. Workflow YAML, project
+  XML/plists, intended paths, generated artifacts, conflict markers,
+  whitespace, and changed-line credential patterns are included in the final
+  audit.
+- Xcode compilation, simulator execution, and live HealthKit authorization are
+  unavailable on this Linux host and are not claimed.
 
 ## Scope Boundaries
 

@@ -2,6 +2,9 @@
 
 ## 2026-06-13
 
+- Rejected HealthKit authorization callbacks from earlier WatchKit activation
+  cycles after the interface deactivates and reactivates.
+- Added mirrored generation-ordering contracts for authorization UI work.
 - Stopped and cleared the retained HealthKit heart-rate query immediately when
   the user stops a workout, before requesting asynchronous session termination.
 - Added mirrored lifecycle and ordering contracts for immediate query cleanup.
