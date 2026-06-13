@@ -136,6 +136,10 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
             //finish the current workout
             self.workoutActive = false
             self.startStopButton.setTitle("Start")
+            if let query = self.heartRateQuery {
+                self.healthStore.stopQuery(query)
+                self.heartRateQuery = nil
+            }
             if let workout = self.workoutSession {
                 healthStore.endWorkoutSession(workout)
             }

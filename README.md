@@ -55,7 +55,8 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   entitlement, plan, query-lifecycle, authorization UI-thread, workout
   authorization Start-button state, session-start, workout delegate UI-thread,
   query-start failure, inactive and queued stale heart-rate callbacks,
-  heart-rate value-bound, and workout session-failure/session-end contracts.
+  immediate query-stop, heart-rate value-bound, and workout
+  session-failure/session-end contracts.
 - Completed maintenance plans live under `docs/plans` and are checked by
   `make check`.
 - GitHub Actions runs the same static contracts on Python 3.10, 3.12, and 3.14
@@ -113,6 +114,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   guard against stale authorization UI work after interface deactivation.
 - See `docs/plans/2026-06-13-stale-workout-session-callbacks.md` for rejecting
   obsolete session callbacks and late workout starts on the main queue.
+- See `docs/plans/2026-06-13-watchkit-immediate-query-stop.md` for stopping and
+  clearing the retained heart-rate query before workout-session termination.
 
 ## Contributing
 

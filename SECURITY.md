@@ -44,6 +44,9 @@ that show a workout can be started without successful HealthKit authorization
 should include the device or simulator state used to reproduce it.
 Queued heart-rate UI work must recheck workout state on the main queue so a
 sample cannot reappear after session cleanup.
+Stopping a workout must stop and clear its retained heart-rate query before
+requesting asynchronous workout-session termination so an older query cannot
+remain executing after a restart.
 
 ## Dependency and Supply Chain Security
 

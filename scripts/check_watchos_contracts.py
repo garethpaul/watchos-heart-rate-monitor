@@ -43,6 +43,9 @@ AUTHORIZATION_LIFECYCLE_PLAN_PATH = (
 STALE_SESSION_CALLBACK_PLAN_PATH = (
     ROOT / "docs" / "plans" / "2026-06-13-stale-workout-session-callbacks.md"
 )
+IMMEDIATE_QUERY_STOP_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-13-watchkit-immediate-query-stop.md"
+)
 WORKFLOW_PATH = ROOT / ".github" / "workflows" / "check.yml"
 INTERFACE_CONTROLLERS = [
     Path("HeartyMonitor WatchKit Extension/InterfaceController.swift"),
@@ -125,6 +128,7 @@ def test_completed_plans_are_in_docs_plans():
     assert_completed_plan(LATEST_SAMPLE_PLAN_PATH, "latest heart-rate sample")
     assert_completed_plan(AUTHORIZATION_LIFECYCLE_PLAN_PATH, "authorization lifecycle guard")
     assert_completed_plan(STALE_SESSION_CALLBACK_PLAN_PATH, "stale workout session callbacks")
+    assert_completed_plan(IMMEDIATE_QUERY_STOP_PLAN_PATH, "immediate heart-rate query stop")
 
 
 def test_ci_workflow_runs_static_baseline():
@@ -333,6 +337,34 @@ def test_workout_session_start_avoids_optional_force_unwrap():
         )
 
 
+def test_stopping_workout_immediately_stops_heart_rate_query():
+    for relative_path in INTERFACE_CONTROLLERS:
+        source = (ROOT / relative_path).read_text()
+        action = source.split("@IBAction func startBtnTapped()", 1)[1].split(
+            "func startWorkout()", 1
+        )[0]
+        stop_branch = action.split("} else {", 1)[0]
+        query_guard = "if let query = self.heartRateQuery"
+        stop_query = "self.healthStore.stopQuery(query)"
+        clear_query = "self.heartRateQuery = nil"
+        end_session = "healthStore.endWorkoutSession(workout)"
+
+        for contract in (query_guard, stop_query, clear_query, end_session):
+            assert_true(
+                contract in stop_branch,
+                "{0} Stop branch must keep {1}".format(relative_path, contract),
+            )
+        assert_true(
+            stop_branch.index(query_guard)
+            < stop_branch.index(stop_query)
+            < stop_branch.index(clear_query)
+            < stop_branch.index(end_session),
+            "{0} must stop and clear the heart-rate query before ending the workout session".format(
+                relative_path
+            ),
+        )
+
+
 def test_heart_rate_query_failure_resets_ui_state():
     for relative_path in INTERFACE_CONTROLLERS:
         source = (ROOT / relative_path).read_text()
@@ -506,6 +538,7 @@ def main():
         test_healthkit_update_handler_guards_anchor,
         test_heart_rate_callbacks_ignore_inactive_workouts,
         test_workout_session_start_avoids_optional_force_unwrap,
+        test_stopping_workout_immediately_stops_heart_rate_query,
         test_heart_rate_query_failure_resets_ui_state,
         test_workout_session_failure_resets_ui_without_sensitive_logs,
         test_workout_session_delegate_updates_ui_on_main_queue,
