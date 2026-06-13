@@ -40,6 +40,9 @@ LATEST_SAMPLE_PLAN_PATH = (
 AUTHORIZATION_LIFECYCLE_PLAN_PATH = (
     ROOT / "docs" / "plans" / "2026-06-12-authorization-lifecycle-guard.md"
 )
+STALE_SESSION_CALLBACK_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-13-stale-workout-session-callbacks.md"
+)
 WORKFLOW_PATH = ROOT / ".github" / "workflows" / "check.yml"
 INTERFACE_CONTROLLERS = [
     Path("HeartyMonitor WatchKit Extension/InterfaceController.swift"),
@@ -121,6 +124,7 @@ def test_completed_plans_are_in_docs_plans():
     assert_completed_plan(MAIN_QUEUE_STALE_CALLBACK_PLAN_PATH, "main-queue stale heart-rate callback")
     assert_completed_plan(LATEST_SAMPLE_PLAN_PATH, "latest heart-rate sample")
     assert_completed_plan(AUTHORIZATION_LIFECYCLE_PLAN_PATH, "authorization lifecycle guard")
+    assert_completed_plan(STALE_SESSION_CALLBACK_PLAN_PATH, "stale workout session callbacks")
 
 
 def test_ci_workflow_runs_static_baseline():
@@ -394,9 +398,12 @@ def test_workout_session_delegate_updates_ui_on_main_queue():
         )
         assert_true(
             state_method.index("dispatch_async(dispatch_get_main_queue())")
+            < state_method.index("guard self.workoutSession === workoutSession else { return }")
+            < state_method.index("switch toState")
+            < state_method.index("guard self.workoutActive else { return }")
             < state_method.index("self.workoutDidStart(date)")
             < state_method.index("self.workoutDidEnd(date)"),
-            "{0} workout start/end callbacks must run inside the main-queue block".format(relative_path),
+            "{0} workout callbacks must reject stale sessions and late starts on the main queue".format(relative_path),
         )
 
         failure_method = source.split(
@@ -408,6 +415,7 @@ def test_workout_session_delegate_updates_ui_on_main_queue():
         )
         assert_true(
             failure_method.index("dispatch_async(dispatch_get_main_queue())")
+            < failure_method.index("guard self.workoutSession === workoutSession else { return }")
             < failure_method.index("self.workoutActive = false")
             < failure_method.index('self.label.setText("cannot start")'),
             "{0} workout failure cleanup must run inside the main-queue block".format(relative_path),
