@@ -1,6 +1,6 @@
 # Immediate Heart-Rate Query Stop
 
-Status: In Progress
+Status: Completed
 
 ## Problem
 
@@ -22,11 +22,11 @@ executing without a retained handle.
 
 ## Verification
 
-- Run the focused watchOS contract.
-- Run the full `make check` gate locally and from an external working
-  directory.
-- Reject hostile mutations for missing cleanup, reversed ordering, missing
-  query clearing, mirror divergence, and stale plan status.
-- Run Python compilation and `git diff --check`.
-- Record Xcode availability without claiming Apple-platform execution when it
-  is unavailable.
+- The focused immediate-query-stop contract passed.
+- The full `make check` gate passed locally and from an external working
+  directory with all 19 watchOS contracts and all 17 workflow mutations.
+- Five hostile source mutations were rejected for missing cleanup, reversed
+  ordering, missing query clearing, mirror divergence, and stale plan status.
+- Python compilation and `git diff --check` passed.
+- Xcode execution was explicitly skipped because this Linux host does not
+  provide `xcodebuild`.
