@@ -49,6 +49,9 @@ IMMEDIATE_QUERY_STOP_PLAN_PATH = (
 AUTHORIZATION_GENERATION_PLAN_PATH = (
     ROOT / "docs" / "plans" / "2026-06-13-authorization-callback-generation.md"
 )
+MAKE_ROOT_PROTECTION_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-14-make-root-override-protection.md"
+)
 WORKFLOW_PATH = ROOT / ".github" / "workflows" / "check.yml"
 INTERFACE_CONTROLLERS = [
     Path("HeartyMonitor WatchKit Extension/InterfaceController.swift"),
@@ -133,6 +136,7 @@ def test_completed_plans_are_in_docs_plans():
     assert_completed_plan(STALE_SESSION_CALLBACK_PLAN_PATH, "stale workout session callbacks")
     assert_completed_plan(IMMEDIATE_QUERY_STOP_PLAN_PATH, "immediate heart-rate query stop")
     assert_completed_plan(AUTHORIZATION_GENERATION_PLAN_PATH, "authorization callback generation")
+    assert_completed_plan(MAKE_ROOT_PROTECTION_PLAN_PATH, "Make root override protection")
 
 
 def test_ci_workflow_runs_static_baseline():
@@ -142,7 +146,10 @@ def test_ci_workflow_runs_static_baseline():
     assert_true(not errors, "CI workflow must {0}".format(errors[0]) if errors else "")
 
     makefile = (ROOT / "Makefile").read_text()
-    assert_true("ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))" in makefile, "Makefile must resolve the repository root")
+    makefile_lines = set(makefile.splitlines())
+    assert_true("override ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))" in makefile_lines, "Makefile must protect the repository root")
+    assert_true("PYTHON ?= python3" in makefile_lines, "Makefile must preserve the Python command override")
+    assert_true("XCODEBUILD ?= xcodebuild" in makefile_lines, "Makefile must preserve the Xcode command override")
     assert_true("PROJECT := $(ROOT)/HeartyMonitor.xcodeproj" in makefile, "Makefile must use the rooted project path")
     assert_true("$(ROOT)/scripts/check_watchos_contracts.py" in makefile, "Makefile must use the rooted contract path")
     assert_true("WORKFLOW_CONTRACT_SCRIPT" in makefile, "Makefile must define the workflow mutation checker")

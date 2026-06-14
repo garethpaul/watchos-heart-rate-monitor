@@ -1,6 +1,6 @@
 # Protect the Make Repository Root from Overrides
 
-## Status: Planned
+## Status: Completed
 
 ## Context
 
@@ -29,3 +29,20 @@ assignment can be replaced from the command line.
 
 - Do not alter Swift behavior, project files, workflows, or HealthKit policy.
 - Do not merge or close stacked pull requests without owner authorization.
+
+## Work Completed
+
+- Protected the Makefile-derived root while preserving Python and Xcode tool
+  overrides.
+- Added exact-line checker contracts and registered this completed plan.
+
+## Verification
+
+- Python compilation and the focused CI/Makefile contract passed.
+- Local, external-directory, and hostile-root `make check` runs passed under
+  240-second timeouts with 20 watchOS contracts and 17 workflow mutations;
+  Xcode correctly remained unavailable on Linux.
+- Nine hostile root, checker, Python/Xcode override, cleanup, and plan-status
+  mutations were rejected.
+- Python syntax, workflow YAML, plist/storyboard/workspace XML, mirror parity,
+  artifact, `git diff --check`, and changed-line secret audits passed.

@@ -1,6 +1,6 @@
 PYTHON ?= python3
 XCODEBUILD ?= xcodebuild
-ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+override ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 PROJECT := $(ROOT)/HeartyMonitor.xcodeproj
 SCHEME := HeartyMonitor
 CONTRACT_SCRIPT := \
