@@ -1,5 +1,11 @@
 # Changes
 
+## 2026-06-14
+
+- Added a privacy-preserving physical Apple Watch verification checklist for
+  HealthKit authorization, workout start/stop, live samples, interruptions,
+  relaunch behavior, redacted evidence, and unresolved failures.
+
 ## 2026-06-13
 
 - Rejected HealthKit authorization callbacks from earlier WatchKit activation

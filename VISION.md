@@ -33,12 +33,13 @@ Priority:
 - Keep GitHub Actions running the static `make check` baseline
 - Keep hosted verification read-only, credential-free, pinned, and protected
   against structural workflow regressions
+- Require auditable physical Apple Watch verification for HealthKit
+  authorization, workout lifecycle, live samples, interruptions, and privacy
 - Treat Swift/watchOS project versions as legacy until documented
 
 Next priorities:
 
 - Add README setup notes for HealthKit entitlements and watchOS versions
-- Add manual verification notes for device testing
 - Modernize HealthKit APIs in a dedicated pass
 
 Contribution rules:

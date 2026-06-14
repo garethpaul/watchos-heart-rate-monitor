@@ -1,6 +1,6 @@
 # Apple Watch Device Verification Checklist
 
-## Status: Planned
+## Status: Completed
 
 ## Context
 
@@ -37,3 +37,21 @@ Watch, where HealthKit permissions and live sensor data are available.
   strings, workflows, signing, or deployment targets.
 - Do not claim simulator or physical-device execution from this Linux host.
 - Do not merge or close stacked pull requests without owner authorization.
+
+## Work Completed
+
+- Added a privacy-preserving physical-device matrix with explicit HealthKit,
+  workout, live-sample, stop, interruption, relaunch, and evidence outcomes.
+- Linked the checklist from repository guidance and made its scope, execution
+  status, roadmap priority, and completed plan mutation-sensitive.
+
+## Verification
+
+- Focused device-checklist and completed-plan contracts passed.
+- Repository and external-directory `make check` passed; Xcode correctly
+  remained unavailable on Linux.
+- Twelve hostile checklist mutations were rejected across physical-device
+  scope, privacy, authorization, workout, live samples, stop, interruption,
+  evidence, roadmap, suite registration, and plan status.
+- Final artifact, credential, and exact-diff audits passed. Hosted verification
+  is recorded against the exact pull-request head after push.

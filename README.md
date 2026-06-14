@@ -65,6 +65,10 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   immutable action pins, and cancellation for superseded runs. Dependency-free
   mutations reject contradictory credential settings and policy regressions.
 - Xcode's test action or `xcodebuild test` can be used with the appropriate scheme and destination on a macOS/Xcode workstation.
+- `DEVICE_VERIFICATION.md` defines the required physical Apple Watch and
+  HealthKit authorization, workout, live-sample, stop, interruption, privacy,
+  and redacted evidence checks. Its execution status remains explicit until a
+  reviewer performs the matrix on hardware.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
@@ -119,6 +123,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   obsolete session callbacks and late workout starts on the main queue.
 - See `docs/plans/2026-06-13-watchkit-immediate-query-stop.md` for stopping and
   clearing the retained heart-rate query before workout-session termination.
+- See `docs/plans/2026-06-14-device-verification-checklist.md` for the physical
+  Apple Watch verification and evidence contract.
 
 ## Contributing
 

@@ -52,6 +52,9 @@ AUTHORIZATION_GENERATION_PLAN_PATH = (
 MAKE_ROOT_PROTECTION_PLAN_PATH = (
     ROOT / "docs" / "plans" / "2026-06-14-make-root-override-protection.md"
 )
+DEVICE_VERIFICATION_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-14-device-verification-checklist.md"
+)
 WORKFLOW_PATH = ROOT / ".github" / "workflows" / "check.yml"
 INTERFACE_CONTROLLERS = [
     Path("HeartyMonitor WatchKit Extension/InterfaceController.swift"),
@@ -137,6 +140,55 @@ def test_completed_plans_are_in_docs_plans():
     assert_completed_plan(IMMEDIATE_QUERY_STOP_PLAN_PATH, "immediate heart-rate query stop")
     assert_completed_plan(AUTHORIZATION_GENERATION_PLAN_PATH, "authorization callback generation")
     assert_completed_plan(MAKE_ROOT_PROTECTION_PLAN_PATH, "Make root override protection")
+    assert_completed_plan(DEVICE_VERIFICATION_PLAN_PATH, "device verification checklist")
+    checker_main = Path(__file__).read_text().rsplit("def main():", 1)[1]
+    assert_true(
+        "test_device_verification_checklist_is_auditable," in checker_main,
+        "device verification checklist contract must run in the main suite",
+    )
+
+
+def test_device_verification_checklist_is_auditable():
+    checklist = (ROOT / "DEVICE_VERIFICATION.md").read_text()
+    normalized_checklist = " ".join(checklist.split())
+    readme = (ROOT / "README.md").read_text()
+    vision = (ROOT / "VISION.md").read_text()
+    changes = (ROOT / "CHANGES.md").read_text()
+
+    for phrase in (
+        "Execution status: Not yet executed",
+        "physical Apple Watch",
+        "Do not record raw heart-rate values",
+        "deny heart-rate read access",
+        "Grant heart-rate read access",
+        "button title changes from `Start` to",
+        "heart-rate label updates",
+        "sample source label",
+        "button title returns to `Start`",
+        "heart-rate label returns to `---`",
+        "interrupt the workout session",
+        "then relaunch",
+        "watch model, watchOS version, paired iPhone iOS version, Xcode",
+        "redacted pass/fail evidence",
+        "Unresolved failures block merge",
+    ):
+        assert_true(
+            phrase in normalized_checklist,
+            "device verification checklist must include {0}".format(phrase),
+        )
+    assert_true("`DEVICE_VERIFICATION.md`" in readme, "README must link the device checklist")
+    assert_true(
+        "docs/plans/2026-06-14-device-verification-checklist.md" in readme,
+        "README must link the device verification plan",
+    )
+    assert_true(
+        "Require auditable physical Apple Watch verification" in vision,
+        "VISION must preserve physical-device verification",
+    )
+    assert_true(
+        "privacy-preserving physical Apple Watch verification checklist" in changes,
+        "CHANGES must record the device verification checklist",
+    )
 
 
 def test_ci_workflow_runs_static_baseline():
@@ -587,6 +639,7 @@ def main():
         test_healthkit_plists_have_share_usage_description,
         test_healthkit_entitlements_are_enabled,
         test_completed_plans_are_in_docs_plans,
+        test_device_verification_checklist_is_auditable,
         test_ci_workflow_runs_static_baseline,
         test_heart_rate_streaming_query_is_retained_and_stopped,
         test_authorization_denial_updates_ui_on_main_queue,
