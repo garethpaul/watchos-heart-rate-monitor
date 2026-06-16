@@ -172,25 +172,28 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
         
         let heartRateQuery = HKAnchoredObjectQuery(type: quantityType, predicate: nil, anchor: anchor, limit: Int(HKObjectQueryNoLimit)) { (query, sampleObjects, deletedObjects, newAnchor, error) -> Void in
             guard self.workoutActive else {return}
+            guard self.heartRateQuery === query else {return}
             guard let newAnchor = newAnchor else {return}
             self.anchor = newAnchor
-            self.updateHeartRate(sampleObjects)
+            self.updateHeartRate(sampleObjects, query: query)
         }
         
         heartRateQuery.updateHandler = {(query, samples, deleteObjects, newAnchor, error) -> Void in
             guard self.workoutActive else {return}
+            guard self.heartRateQuery === query else {return}
             guard let newAnchor = newAnchor else {return}
             self.anchor = newAnchor
-            self.updateHeartRate(samples)
+            self.updateHeartRate(samples, query: query)
         }
         return heartRateQuery
     }
     
-    func updateHeartRate(samples: [HKSample]?) {
+    func updateHeartRate(samples: [HKSample]?, query: HKQuery) {
         guard let heartRateSamples = samples as? [HKQuantitySample] else {return}
         
         dispatch_async(dispatch_get_main_queue()) {
             guard self.workoutActive else{return}
+            guard self.heartRateQuery === query else{return}
             guard let sample = heartRateSamples.last else{return}
             let value = sample.quantity.doubleValueForUnit(self.heartRateUnit)
             guard value >= 0 && value <= 300 else{return}

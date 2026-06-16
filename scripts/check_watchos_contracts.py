@@ -55,6 +55,9 @@ MAKE_ROOT_PROTECTION_PLAN_PATH = (
 DEVICE_VERIFICATION_PLAN_PATH = (
     ROOT / "docs" / "plans" / "2026-06-14-device-verification-checklist.md"
 )
+CURRENT_QUERY_CALLBACK_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-16-current-heart-rate-query-callback.md"
+)
 WORKFLOW_PATH = ROOT / ".github" / "workflows" / "check.yml"
 INTERFACE_CONTROLLERS = [
     Path("HeartyMonitor WatchKit Extension/InterfaceController.swift"),
@@ -141,10 +144,15 @@ def test_completed_plans_are_in_docs_plans():
     assert_completed_plan(AUTHORIZATION_GENERATION_PLAN_PATH, "authorization callback generation")
     assert_completed_plan(MAKE_ROOT_PROTECTION_PLAN_PATH, "Make root override protection")
     assert_completed_plan(DEVICE_VERIFICATION_PLAN_PATH, "device verification checklist")
+    assert_completed_plan(CURRENT_QUERY_CALLBACK_PLAN_PATH, "current heart-rate query callback")
     checker_main = Path(__file__).read_text().rsplit("def main():", 1)[1]
     assert_true(
         "test_device_verification_checklist_is_auditable," in checker_main,
         "device verification checklist contract must run in the main suite",
+    )
+    assert_true(
+        "test_heart_rate_callbacks_match_current_query," in checker_main,
+        "current heart-rate query callback contract must run in the main suite",
     )
 
 
@@ -429,6 +437,60 @@ def test_heart_rate_callbacks_ignore_inactive_workouts():
         )
 
 
+def test_heart_rate_callbacks_match_current_query():
+    for relative_path in INTERFACE_CONTROLLERS:
+        source = (ROOT / relative_path).read_text()
+        method = source.split("func createHeartRateStreamingQuery", 1)[1].split(
+            "func updateHeartRate", 1
+        )[0]
+        initial_callback, update_callback = method.split("heartRateQuery.updateHandler", 1)
+        query_guard = "guard self.heartRateQuery === query else {return}"
+        for callback_name, callback in (
+            ("initial", initial_callback),
+            ("update", update_callback),
+        ):
+            assert_true(
+                query_guard in callback,
+                "{0} {1} callback must reject stale heart-rate queries".format(
+                    relative_path, callback_name
+                ),
+            )
+            assert_true(
+                callback.index(query_guard) < callback.index("self.anchor = newAnchor"),
+                "{0} {1} callback must match the retained query before anchor mutation".format(
+                    relative_path, callback_name
+                ),
+            )
+        assert_true(
+            method.count("self.updateHeartRate(") == 2
+            and method.count(", query: query)") == 2,
+            "{0} callbacks must pass their query to queued UI work".format(relative_path),
+        )
+
+        update_method = source.split("func updateHeartRate", 1)[1].split(
+            "func updateDeviceName", 1
+        )[0]
+        queued_query_guard = "guard self.heartRateQuery === query else{return}"
+        assert_true(
+            "(samples: [HKSample]?, query: HKQuery)" in update_method,
+            "{0} queued heart-rate UI work must retain callback query identity".format(
+                relative_path
+            ),
+        )
+        assert_true(
+            queued_query_guard in update_method,
+            "{0} queued heart-rate UI work must reject stale queries".format(relative_path),
+        )
+        assert_true(
+            update_method.index("dispatch_async(dispatch_get_main_queue())")
+            < update_method.index(queued_query_guard)
+            < update_method.index("guard let sample = heartRateSamples.last else{return}"),
+            "{0} queued UI work must match the retained query before reading samples".format(
+                relative_path
+            ),
+        )
+
+
 def test_workout_session_start_avoids_optional_force_unwrap():
     for relative_path in INTERFACE_CONTROLLERS:
         source = (ROOT / relative_path).read_text()
@@ -648,6 +710,7 @@ def main():
         test_authorization_callbacks_match_current_activation_generation,
         test_healthkit_update_handler_guards_anchor,
         test_heart_rate_callbacks_ignore_inactive_workouts,
+        test_heart_rate_callbacks_match_current_query,
         test_workout_session_start_avoids_optional_force_unwrap,
         test_stopping_workout_immediately_stops_heart_rate_query,
         test_heart_rate_query_failure_resets_ui_state,

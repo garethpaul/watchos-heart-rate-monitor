@@ -1,5 +1,12 @@
 # Changes
 
+## 2026-06-16
+
+- Rejected delayed HealthKit callbacks unless they belong to the currently
+  retained heart-rate query, preventing a stopped workout's samples from
+  mutating a newly started workout, including after UI work has been queued.
+- Added mirrored static contracts for query identity and anchor-update order.
+
 ## 2026-06-14
 
 - Added a privacy-preserving physical Apple Watch verification checklist for
