@@ -6,6 +6,8 @@
   retained heart-rate query, preventing a stopped workout's samples from
   mutating a newly started workout, including after UI work has been queued.
 - Added mirrored static contracts for query identity and anchor-update order.
+- Failed closed when the current heart-rate streaming query reports an error,
+  stopping and clearing query/session state before generic failure UI.
 
 ## 2026-06-14
 

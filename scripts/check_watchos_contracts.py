@@ -58,6 +58,9 @@ DEVICE_VERIFICATION_PLAN_PATH = (
 CURRENT_QUERY_CALLBACK_PLAN_PATH = (
     ROOT / "docs" / "plans" / "2026-06-16-current-heart-rate-query-callback.md"
 )
+QUERY_ERROR_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-16-heart-rate-query-error.md"
+)
 WORKFLOW_PATH = ROOT / ".github" / "workflows" / "check.yml"
 INTERFACE_CONTROLLERS = [
     Path("HeartyMonitor WatchKit Extension/InterfaceController.swift"),
@@ -145,6 +148,7 @@ def test_completed_plans_are_in_docs_plans():
     assert_completed_plan(MAKE_ROOT_PROTECTION_PLAN_PATH, "Make root override protection")
     assert_completed_plan(DEVICE_VERIFICATION_PLAN_PATH, "device verification checklist")
     assert_completed_plan(CURRENT_QUERY_CALLBACK_PLAN_PATH, "current heart-rate query callback")
+    assert_completed_plan(QUERY_ERROR_PLAN_PATH, "heart-rate query error handling")
     checker_main = Path(__file__).read_text().rsplit("def main():", 1)[1]
     assert_true(
         "test_device_verification_checklist_is_auditable," in checker_main,
@@ -153,6 +157,10 @@ def test_completed_plans_are_in_docs_plans():
     assert_true(
         "test_heart_rate_callbacks_match_current_query," in checker_main,
         "current heart-rate query callback contract must run in the main suite",
+    )
+    assert_true(
+        "test_heart_rate_query_errors_fail_closed," in checker_main,
+        "heart-rate query error contract must run in the main suite",
     )
 
 
@@ -491,6 +499,90 @@ def test_heart_rate_callbacks_match_current_query():
         )
 
 
+def test_heart_rate_query_errors_fail_closed():
+    sources = []
+    for relative_path in INTERFACE_CONTROLLERS:
+        source = (ROOT / relative_path).read_text()
+        sources.append(source)
+        query_method = source.split("func createHeartRateStreamingQuery", 1)[1].split(
+            "func heartRateQueryDidFail", 1
+        )[0]
+        initial_callback, update_callback = query_method.split("heartRateQuery.updateHandler", 1)
+        for callback_name, callback in (
+            ("initial", initial_callback),
+            ("update", update_callback),
+        ):
+            for contract in (
+                "guard self.workoutActive else {return}",
+                "guard self.heartRateQuery === query else {return}",
+                "guard error == nil else",
+                "self.heartRateQueryDidFail(query)",
+                "guard let newAnchor = newAnchor else {return}",
+                "self.anchor = newAnchor",
+            ):
+                assert_true(
+                    contract in callback,
+                    "{0} {1} callback must include {2}".format(
+                        relative_path, callback_name, contract
+                    ),
+                )
+            assert_true(
+                callback.index("guard self.heartRateQuery === query else {return}")
+                < callback.index("guard error == nil else")
+                < callback.index("self.heartRateQueryDidFail(query)")
+                < callback.index("guard let newAnchor = newAnchor else {return}")
+                < callback.index("self.anchor = newAnchor"),
+                "{0} {1} callback must reject current-query errors before anchor processing".format(
+                    relative_path, callback_name
+                ),
+            )
+
+        failure_method = source.split("func heartRateQueryDidFail", 1)[1].split(
+            "func updateHeartRate", 1
+        )[0]
+        ordered_contracts = (
+            "dispatch_async(dispatch_get_main_queue())",
+            "guard self.workoutActive else {return}",
+            "guard self.heartRateQuery === query else {return}",
+            "self.workoutActive = false",
+            'self.startStopButton.setTitle("Start")',
+            "self.healthStore.stopQuery(query)",
+            "self.heartRateQuery = nil",
+            "self.healthStore.endWorkoutSession(workout)",
+            "self.workoutSession = nil",
+            'self.label.setText("cannot start")',
+            'NSLog("Heart-rate query failed")',
+        )
+        positions = [failure_method.index(contract) for contract in ordered_contracts]
+        assert_true(
+            positions == sorted(positions),
+            "{0} query failure must validate identity and clear query/session UI state in order".format(
+                relative_path
+            ),
+        )
+        assert_true(
+            "NSLog(error" not in failure_method and "localizedDescription" not in source,
+            "{0} query failure logs must not expose HealthKit error details".format(relative_path),
+        )
+
+    assert_true(
+        sources[0] == sources[1],
+        "WatchKit source and UI-test mirror controllers must remain identical",
+    )
+
+    docs = {
+        "README.md": "Heart-rate query errors stop and clear the current query and workout",
+        "SECURITY.md": "Heart-rate query errors fail closed without logging HealthKit details",
+        "VISION.md": "Fail closed when the current heart-rate query reports an error",
+        "CHANGES.md": "Failed closed when the current heart-rate streaming query reports an error",
+    }
+    for relative_path, phrase in docs.items():
+        assert_true(
+            phrase in (ROOT / relative_path).read_text(),
+            "{0} must document heart-rate query error handling".format(relative_path),
+        )
+
+
 def test_workout_session_start_avoids_optional_force_unwrap():
     for relative_path in INTERFACE_CONTROLLERS:
         source = (ROOT / relative_path).read_text()
@@ -711,6 +803,7 @@ def main():
         test_healthkit_update_handler_guards_anchor,
         test_heart_rate_callbacks_ignore_inactive_workouts,
         test_heart_rate_callbacks_match_current_query,
+        test_heart_rate_query_errors_fail_closed,
         test_workout_session_start_avoids_optional_force_unwrap,
         test_stopping_workout_immediately_stops_heart_rate_query,
         test_heart_rate_query_failure_resets_ui_state,

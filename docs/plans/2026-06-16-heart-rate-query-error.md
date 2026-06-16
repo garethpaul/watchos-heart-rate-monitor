@@ -1,6 +1,6 @@
 # Fail Closed When Heart-Rate Streaming Queries Error
 
-## Status: Planned
+## Status: Completed
 
 ## Context
 
@@ -59,3 +59,30 @@ UI even though no further samples can be trusted.
 Local Xcode, HealthKit execution, and physical Apple Watch validation are not
 available on this Linux host. Hosted portable checks and the existing device
 matrix remain the authoritative follow-up boundaries.
+
+## Work Completed
+
+- Added fail-closed handling to both initial and update anchored-query error
+  paths before anchor or sample processing.
+- Added current-query, main-queue cleanup that stops and clears query/session
+  state, restores the Start control, and uses generic failure UI and logging.
+- Kept the production and UI-test mirror controllers byte-identical.
+- Added focused portable contracts and maintained privacy/lifecycle guidance.
+
+## Verification Completed
+
+- `python3 -m py_compile scripts/check_watchos_contracts.py`
+- Focused `test_heart_rate_query_errors_fail_closed` execution.
+- All 22 implementation contracts passed before enabling this completed-plan
+  gate.
+- Workflow policy tests passed with 17 mutations rejected.
+- The broad-cleaning `make check` wrapper is not executed under the workspace
+  preservation policy; its complete non-cleaning `make verify` payload is run
+  from repository and external working directories instead.
+- Repository and external-directory `make verify` passed 23 static contracts
+  and 17 workflow mutations; Xcode was unavailable and explicitly skipped.
+- Eight focused hostile mutations were rejected across both callback error
+  guards, failed-query retention, HealthKit detail logging, mirror parity,
+  README guidance, checker registration, and completed-plan status.
+- Plan-aware code review reported no actionable findings; native Swift,
+  HealthKit, and physical-device validation remain explicit residual risks.

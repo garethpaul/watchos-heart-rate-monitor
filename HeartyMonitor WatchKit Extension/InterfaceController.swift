@@ -173,6 +173,10 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
         let heartRateQuery = HKAnchoredObjectQuery(type: quantityType, predicate: nil, anchor: anchor, limit: Int(HKObjectQueryNoLimit)) { (query, sampleObjects, deletedObjects, newAnchor, error) -> Void in
             guard self.workoutActive else {return}
             guard self.heartRateQuery === query else {return}
+            guard error == nil else {
+                self.heartRateQueryDidFail(query)
+                return
+            }
             guard let newAnchor = newAnchor else {return}
             self.anchor = newAnchor
             self.updateHeartRate(sampleObjects, query: query)
@@ -181,11 +185,32 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
         heartRateQuery.updateHandler = {(query, samples, deleteObjects, newAnchor, error) -> Void in
             guard self.workoutActive else {return}
             guard self.heartRateQuery === query else {return}
+            guard error == nil else {
+                self.heartRateQueryDidFail(query)
+                return
+            }
             guard let newAnchor = newAnchor else {return}
             self.anchor = newAnchor
             self.updateHeartRate(samples, query: query)
         }
         return heartRateQuery
+    }
+
+    func heartRateQueryDidFail(query: HKQuery) {
+        dispatch_async(dispatch_get_main_queue()) {
+            guard self.workoutActive else {return}
+            guard self.heartRateQuery === query else {return}
+            self.workoutActive = false
+            self.startStopButton.setTitle("Start")
+            self.healthStore.stopQuery(query)
+            self.heartRateQuery = nil
+            if let workout = self.workoutSession {
+                self.healthStore.endWorkoutSession(workout)
+            }
+            self.workoutSession = nil
+            self.label.setText("cannot start")
+            NSLog("Heart-rate query failed")
+        }
     }
     
     func updateHeartRate(samples: [HKSample]?, query: HKQuery) {

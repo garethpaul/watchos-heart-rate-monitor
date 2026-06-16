@@ -56,8 +56,10 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   authorization Start-button state, session-start, workout delegate UI-thread,
   query-start failure, inactive and queued stale heart-rate callbacks,
   activation-generation authorization guards, immediate query-stop,
-  heart-rate value-bound, and workout
+  current-query error cleanup, heart-rate value-bound, and workout
   session-failure/session-end contracts.
+- Heart-rate query errors stop and clear the current query and workout, restore
+  the Start state, and use a generic failure message without exposing details.
 - Completed maintenance plans live under `docs/plans` and are checked by
   `make check`.
 - GitHub Actions runs the same static contracts on Python 3.10, 3.12, and 3.14
@@ -125,6 +127,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   clearing the retained heart-rate query before workout-session termination.
 - See `docs/plans/2026-06-14-device-verification-checklist.md` for the physical
   Apple Watch verification and evidence contract.
+- See `docs/plans/2026-06-16-heart-rate-query-error.md` for fail-closed current
+  query error handling and mirrored controller coverage.
 
 ## Contributing
 

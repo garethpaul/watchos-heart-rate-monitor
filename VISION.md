@@ -26,6 +26,7 @@ Priority:
 - Reset visible workout controls when workout sessions end normally
 - Ignore heart-rate callbacks after workouts are inactive
 - Stop retained heart-rate queries immediately when workouts are stopped
+- Fail closed when the current heart-rate query reports an error
 - Recheck workout state before queued heart-rate UI updates
 - Display the newest sample when HealthKit delivers heart-rate batches
 - Ignore out-of-range heart-rate values before display conversion

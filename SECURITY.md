@@ -50,6 +50,9 @@ controls after the interface reactivates.
 Stopping a workout must stop and clear its retained heart-rate query before
 requesting asynchronous workout-session termination so an older query cannot
 remain executing after a restart.
+Heart-rate query errors fail closed without logging HealthKit details: the
+current query and workout are stopped and cleared before generic failure UI is
+shown.
 
 ## Dependency and Supply Chain Security
 
