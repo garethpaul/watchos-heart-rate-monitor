@@ -56,10 +56,14 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   authorization Start-button state, session-start, workout delegate UI-thread,
   query-start failure, inactive and queued stale heart-rate callbacks,
   activation-generation authorization guards, immediate query-stop,
-  current-query error cleanup, heart-rate value-bound, and workout
+  current-query error cleanup, generation-bound heart animation, heart-rate
+  value-bound, and workout
   session-failure/session-end contracts.
 - Heart-rate query errors stop and clear the current query and workout, restore
   the Start state, and use a generic failure message without exposing details.
+- Delayed heart-icon callbacks recheck interface, workout, and animation
+  generation state; teardown paths invalidate queued work and restore the
+  default icon size synchronously.
 - Completed maintenance plans live under `docs/plans` and are checked by
   `make check`.
 - GitHub Actions runs the same static contracts on Python 3.10, 3.12, and 3.14

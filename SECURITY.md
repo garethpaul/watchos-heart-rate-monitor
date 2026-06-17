@@ -53,6 +53,8 @@ remain executing after a restart.
 Heart-rate query errors fail closed without logging HealthKit details: the
 current query and workout are stopped and cleared before generic failure UI is
 shown.
+Delayed heart animation callbacks must match the active interface, workout,
+and animation generation before mutating WatchKit UI.
 
 ## Dependency and Supply Chain Security
 

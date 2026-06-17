@@ -3,6 +3,7 @@
 import plistlib
 from pathlib import Path
 
+from heart_animation_generation_contract import validation_errors as heart_animation_errors
 from workflow_contract import validate as validate_workflow
 
 
@@ -60,6 +61,9 @@ CURRENT_QUERY_CALLBACK_PLAN_PATH = (
 )
 QUERY_ERROR_PLAN_PATH = (
     ROOT / "docs" / "plans" / "2026-06-16-heart-rate-query-error.md"
+)
+HEART_ANIMATION_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-17-heart-animation-generation.md"
 )
 WORKFLOW_PATH = ROOT / ".github" / "workflows" / "check.yml"
 INTERFACE_CONTROLLERS = [
@@ -149,6 +153,7 @@ def test_completed_plans_are_in_docs_plans():
     assert_completed_plan(DEVICE_VERIFICATION_PLAN_PATH, "device verification checklist")
     assert_completed_plan(CURRENT_QUERY_CALLBACK_PLAN_PATH, "current heart-rate query callback")
     assert_completed_plan(QUERY_ERROR_PLAN_PATH, "heart-rate query error handling")
+    assert_completed_plan(HEART_ANIMATION_PLAN_PATH, "heart animation generation")
     checker_main = Path(__file__).read_text().rsplit("def main():", 1)[1]
     assert_true(
         "test_device_verification_checklist_is_auditable," in checker_main,
@@ -162,6 +167,20 @@ def test_completed_plans_are_in_docs_plans():
         "test_heart_rate_query_errors_fail_closed," in checker_main,
         "heart-rate query error contract must run in the main suite",
     )
+    assert_true(
+        "test_heart_animation_generation_guards," in checker_main,
+        "heart animation generation contract must run in the main suite",
+    )
+
+
+def test_heart_animation_generation_guards():
+    for relative_path in INTERFACE_CONTROLLERS:
+        source = (ROOT / relative_path).read_text()
+        errors = heart_animation_errors(source)
+        assert_true(
+            not errors,
+            "{0}: {1}".format(relative_path, "; ".join(errors)),
+        )
 
 
 def test_device_verification_checklist_is_auditable():
@@ -804,6 +823,7 @@ def main():
         test_heart_rate_callbacks_ignore_inactive_workouts,
         test_heart_rate_callbacks_match_current_query,
         test_heart_rate_query_errors_fail_closed,
+        test_heart_animation_generation_guards,
         test_workout_session_start_avoids_optional_force_unwrap,
         test_stopping_workout_immediately_stops_heart_rate_query,
         test_heart_rate_query_failure_resets_ui_state,

@@ -56,6 +56,8 @@
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 - See `docs/plans/2026-06-08-healthkit-privacy-strings.md` for the current HealthKit privacy and query baseline.
+- Delayed heart animations must match the current interface, workout, and
+  animation generation before changing WatchKit UI.
 
 ## Agent workflow
 

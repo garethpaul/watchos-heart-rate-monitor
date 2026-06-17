@@ -1,5 +1,11 @@
 # Changes
 
+## 2026-06-17
+
+- Generation-bound delayed heart-icon callbacks to the active interface and
+  workout, and reset the icon synchronously during teardown.
+- Added mirrored source contracts and fourteen hostile animation mutations.
+
 ## 2026-06-16
 
 - Rejected delayed HealthKit callbacks unless they belong to the currently

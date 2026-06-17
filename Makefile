@@ -7,6 +7,8 @@ CONTRACT_SCRIPT := \
 	$(ROOT)/scripts/check_watchos_contracts.py
 WORKFLOW_CONTRACT_SCRIPT := \
 	$(ROOT)/scripts/test_workflow_contract.py
+HEART_ANIMATION_CONTRACT_SCRIPT := \
+	$(ROOT)/scripts/test_heart_animation_generation_contract.py
 
 .PHONY: clean lint test contract-test build verify check
 
@@ -19,6 +21,7 @@ lint:
 
 test:
 	PYTHONDONTWRITEBYTECODE=1 $(PYTHON) $(CONTRACT_SCRIPT)
+	PYTHONDONTWRITEBYTECODE=1 $(PYTHON) $(HEART_ANIMATION_CONTRACT_SCRIPT)
 
 contract-test:
 	PYTHONDONTWRITEBYTECODE=1 $(PYTHON) $(WORKFLOW_CONTRACT_SCRIPT)
