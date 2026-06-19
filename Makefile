@@ -9,6 +9,8 @@ WORKFLOW_CONTRACT_SCRIPT := \
 	$(ROOT)/scripts/test_workflow_contract.py
 HEART_ANIMATION_CONTRACT_SCRIPT := \
 	$(ROOT)/scripts/test_heart_animation_generation_contract.py
+HEART_RATE_QUERY_OWNERSHIP_CONTRACT_SCRIPT := \
+	$(ROOT)/scripts/test_heart_rate_query_ownership_contract.py
 
 .PHONY: clean lint test contract-test build verify check
 
@@ -22,6 +24,7 @@ lint:
 test:
 	PYTHONDONTWRITEBYTECODE=1 $(PYTHON) $(CONTRACT_SCRIPT)
 	PYTHONDONTWRITEBYTECODE=1 $(PYTHON) $(HEART_ANIMATION_CONTRACT_SCRIPT)
+	PYTHONDONTWRITEBYTECODE=1 $(PYTHON) $(HEART_RATE_QUERY_OWNERSHIP_CONTRACT_SCRIPT)
 
 contract-test:
 	PYTHONDONTWRITEBYTECODE=1 $(PYTHON) $(WORKFLOW_CONTRACT_SCRIPT)

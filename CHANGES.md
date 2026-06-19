@@ -1,5 +1,15 @@
 # Changes
 
+## 2026-06-19
+
+- Moved anchored-query result ownership onto the main queue before workout,
+  query, error, anchor, or sample state is inspected or changed.
+- Retained status and source text across inactive WatchKit periods and restored
+  that state plus baseline heart geometry during activation.
+- Rejected zero BPM samples and relinquished ending workout sessions before
+  requesting asynchronous termination.
+- Added twelve hostile query-ownership mutations and mirrored lifecycle checks.
+
 ## 2026-06-17
 
 - Generation-bound delayed heart-icon callbacks to the active interface and

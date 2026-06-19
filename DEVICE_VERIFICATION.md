@@ -38,14 +38,22 @@ install or relaunch.
    `Stop`, a workout begins, the heart-rate label updates, the sample source label
    identifies the active source, and the heart image animates.
 5. **Workout stop:** Tap Stop. Confirm the button title returns to `Start`, the
-   heart-rate query stops, and the heart-rate label returns to `---` when the
-   workout session ends. Wait long enough to confirm late samples do not update
-   the stopped UI.
-6. **Interruption and recovery:** Start another workout, interrupt the workout
+   heart-rate query stops, and the heart-rate label returns to `---`
+   immediately. Wait long enough to confirm late query, session-end, and
+   session-failure callbacks do not update the stopped UI.
+6. **Inactive interface restoration:** Start another workout and wait for a
+   heart-rate/source update. Navigate away or lock the watch, wait for another
+   update, then return. Confirm the latest retained status/source is rendered,
+   the button matches the active workout, and the heart starts from its baseline
+   size before the next beat animation.
+7. **Interruption and recovery:** Start another workout, interrupt the workout
    session by leaving or terminating the app, then relaunch. Confirm stale
    callbacks do not restore an obsolete workout and a new workout can start and
    stop normally.
-7. **Repeatability:** Repeat start and stop once more. Confirm authorization is
+8. **Invalid sample handling:** Using a controlled HealthKit test source when
+   available, confirm zero, negative, nonfinite, and above-300 BPM samples do not
+   replace the last valid display value.
+9. **Repeatability:** Repeat start and stop once more. Confirm authorization is
    not requested unnecessarily and the displayed source and controls remain
    consistent.
 

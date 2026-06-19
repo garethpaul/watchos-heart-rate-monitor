@@ -26,11 +26,14 @@ Priority:
 - Reset visible workout controls when workout sessions end normally
 - Ignore heart-rate callbacks after workouts are inactive
 - Stop retained heart-rate queries immediately when workouts are stopped
+- Own HealthKit callback state on the main queue before advancing query anchors
+- Restore retained status, source, and heart geometry when WatchKit reactivates
+- Relinquish explicitly stopped workout sessions before asynchronous ending
 - Fail closed when the current heart-rate query reports an error
 - Reject stale delayed heart animation callbacks after newer beats or teardown
 - Recheck workout state before queued heart-rate UI updates
 - Display the newest sample when HealthKit delivers heart-rate batches
-- Ignore out-of-range heart-rate values before display conversion
+- Ignore zero, nonfinite, and out-of-range heart-rate values before display conversion
 - Avoid storing or uploading heart-rate samples by default
 - Keep GitHub Actions running the static `make check` baseline
 - Keep hosted verification read-only, credential-free, pinned, and protected

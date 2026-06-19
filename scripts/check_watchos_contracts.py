@@ -4,6 +4,7 @@ import plistlib
 from pathlib import Path
 
 from heart_animation_generation_contract import validation_errors as heart_animation_errors
+from heart_rate_query_ownership_contract import validation_errors as query_ownership_errors
 from workflow_contract import validate as validate_workflow
 
 
@@ -64,6 +65,9 @@ QUERY_ERROR_PLAN_PATH = (
 )
 HEART_ANIMATION_PLAN_PATH = (
     ROOT / "docs" / "plans" / "2026-06-17-heart-animation-generation.md"
+)
+QUERY_OWNERSHIP_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-19-watchos-main-queue-query-ownership.md"
 )
 WORKFLOW_PATH = ROOT / ".github" / "workflows" / "check.yml"
 INTERFACE_CONTROLLERS = [
@@ -154,6 +158,7 @@ def test_completed_plans_are_in_docs_plans():
     assert_completed_plan(CURRENT_QUERY_CALLBACK_PLAN_PATH, "current heart-rate query callback")
     assert_completed_plan(QUERY_ERROR_PLAN_PATH, "heart-rate query error handling")
     assert_completed_plan(HEART_ANIMATION_PLAN_PATH, "heart animation generation")
+    assert_completed_plan(QUERY_OWNERSHIP_PLAN_PATH, "main-queue query ownership")
     checker_main = Path(__file__).read_text().rsplit("def main():", 1)[1]
     assert_true(
         "test_device_verification_checklist_is_auditable," in checker_main,
@@ -171,12 +176,26 @@ def test_completed_plans_are_in_docs_plans():
         "test_heart_animation_generation_guards," in checker_main,
         "heart animation generation contract must run in the main suite",
     )
+    assert_true(
+        "test_heart_rate_query_ownership_guards," in checker_main,
+        "heart-rate query ownership contract must run in the main suite",
+    )
 
 
 def test_heart_animation_generation_guards():
     for relative_path in INTERFACE_CONTROLLERS:
         source = (ROOT / relative_path).read_text()
         errors = heart_animation_errors(source)
+        assert_true(
+            not errors,
+            "{0}: {1}".format(relative_path, "; ".join(errors)),
+        )
+
+
+def test_heart_rate_query_ownership_guards():
+    for relative_path in INTERFACE_CONTROLLERS:
+        source = (ROOT / relative_path).read_text()
+        errors = query_ownership_errors(source)
         assert_true(
             not errors,
             "{0}: {1}".format(relative_path, "; ".join(errors)),
@@ -452,14 +471,16 @@ def test_healthkit_update_handler_guards_anchor():
 def test_heart_rate_callbacks_ignore_inactive_workouts():
     for relative_path in INTERFACE_CONTROLLERS:
         source = (ROOT / relative_path).read_text()
-        method = source.split("func createHeartRateStreamingQuery", 1)[1].split("func updateHeartRate", 1)[0]
+        method = source.split("func handleHeartRateQueryResult", 1)[1].split(
+            "func heartRateQueryDidFail", 1
+        )[0]
         assert_true(
-            method.count("guard self.workoutActive else {return}") >= 2,
+            "guard workoutActive else {return}" in method,
             "{0} heart-rate callbacks must ignore inactive workouts".format(relative_path),
         )
         assert_true(
-            method.index("guard self.workoutActive else {return}")
-            < method.index("self.anchor = newAnchor"),
+            method.index("guard workoutActive else {return}")
+            < method.index("anchor = newAnchor"),
             "{0} heart-rate callbacks must check workout state before anchor/UI updates".format(relative_path),
         )
 
@@ -467,52 +488,54 @@ def test_heart_rate_callbacks_ignore_inactive_workouts():
 def test_heart_rate_callbacks_match_current_query():
     for relative_path in INTERFACE_CONTROLLERS:
         source = (ROOT / relative_path).read_text()
-        method = source.split("func createHeartRateStreamingQuery", 1)[1].split(
-            "func updateHeartRate", 1
+        query_factory = source.split("func createHeartRateStreamingQuery", 1)[1].split(
+            "func handleHeartRateQueryResult", 1
         )[0]
-        initial_callback, update_callback = method.split("heartRateQuery.updateHandler", 1)
-        query_guard = "guard self.heartRateQuery === query else {return}"
+        initial_callback, update_callback = query_factory.split("heartRateQuery.updateHandler", 1)
         for callback_name, callback in (
             ("initial", initial_callback),
             ("update", update_callback),
         ):
             assert_true(
-                query_guard in callback,
-                "{0} {1} callback must reject stale heart-rate queries".format(
+                "dispatch_async(dispatch_get_main_queue())" in callback
+                and "self.handleHeartRateQueryResult(" in callback,
+                "{0} {1} callback must route through main-queue ownership".format(
                     relative_path, callback_name
                 ),
             )
-            assert_true(
-                callback.index(query_guard) < callback.index("self.anchor = newAnchor"),
-                "{0} {1} callback must match the retained query before anchor mutation".format(
-                    relative_path, callback_name
-                ),
-            )
+
+        owner = source.split("func handleHeartRateQueryResult", 1)[1].split(
+            "func heartRateQueryDidFail", 1
+        )[0]
+        query_guard = "guard heartRateQuery === query else {return}"
         assert_true(
-            method.count("self.updateHeartRate(") == 2
-            and method.count(", query: query)") == 2,
-            "{0} callbacks must pass their query to queued UI work".format(relative_path),
+            owner.index(query_guard)
+            < owner.index("anchor = newAnchor")
+            < owner.index("updateHeartRate(samples, query: query)"),
+            "{0} main-queue owner must match the retained query before anchor mutation".format(
+                relative_path
+            ),
         )
 
         update_method = source.split("func updateHeartRate", 1)[1].split(
-            "func updateDeviceName", 1
+            "func updateStatusText", 1
         )[0]
         queued_query_guard = "guard self.heartRateQuery === query else{return}"
         assert_true(
             "(samples: [HKSample]?, query: HKQuery)" in update_method,
-            "{0} queued heart-rate UI work must retain callback query identity".format(
+            "{0} heart-rate UI work must retain callback query identity".format(
                 relative_path
             ),
         )
         assert_true(
             queued_query_guard in update_method,
-            "{0} queued heart-rate UI work must reject stale queries".format(relative_path),
+            "{0} heart-rate UI work must reject stale queries".format(relative_path),
         )
         assert_true(
-            update_method.index("dispatch_async(dispatch_get_main_queue())")
-            < update_method.index(queued_query_guard)
+            "dispatch_async(" not in update_method
+            and update_method.index(queued_query_guard)
             < update_method.index("guard let sample = heartRateSamples.last else{return}"),
-            "{0} queued UI work must match the retained query before reading samples".format(
+            "{0} main-queue UI work must match the retained query before reading samples".format(
                 relative_path
             ),
         )
@@ -524,7 +547,7 @@ def test_heart_rate_query_errors_fail_closed():
         source = (ROOT / relative_path).read_text()
         sources.append(source)
         query_method = source.split("func createHeartRateStreamingQuery", 1)[1].split(
-            "func heartRateQueryDidFail", 1
+            "func handleHeartRateQueryResult", 1
         )[0]
         initial_callback, update_callback = query_method.split("heartRateQuery.updateHandler", 1)
         for callback_name, callback in (
@@ -532,12 +555,8 @@ def test_heart_rate_query_errors_fail_closed():
             ("update", update_callback),
         ):
             for contract in (
-                "guard self.workoutActive else {return}",
-                "guard self.heartRateQuery === query else {return}",
-                "guard error == nil else",
-                "self.heartRateQueryDidFail(query)",
-                "guard let newAnchor = newAnchor else {return}",
-                "self.anchor = newAnchor",
+                "dispatch_async(dispatch_get_main_queue())",
+                "self.handleHeartRateQueryResult(",
             ):
                 assert_true(
                     contract in callback,
@@ -545,31 +564,40 @@ def test_heart_rate_query_errors_fail_closed():
                         relative_path, callback_name, contract
                     ),
                 )
-            assert_true(
-                callback.index("guard self.heartRateQuery === query else {return}")
-                < callback.index("guard error == nil else")
-                < callback.index("self.heartRateQueryDidFail(query)")
-                < callback.index("guard let newAnchor = newAnchor else {return}")
-                < callback.index("self.anchor = newAnchor"),
-                "{0} {1} callback must reject current-query errors before anchor processing".format(
-                    relative_path, callback_name
-                ),
-            )
+
+        owner = source.split("func handleHeartRateQueryResult", 1)[1].split(
+            "func heartRateQueryDidFail", 1
+        )[0]
+        owner_contracts = (
+            "guard workoutActive else {return}",
+            "guard heartRateQuery === query else {return}",
+            "guard error == nil else",
+            "heartRateQueryDidFail(query)",
+            "guard let newAnchor = newAnchor else {return}",
+            "anchor = newAnchor",
+        )
+        owner_positions = [owner.index(contract) for contract in owner_contracts]
+        assert_true(
+            owner_positions == sorted(owner_positions),
+            "{0} query owner must reject current-query errors before anchor processing".format(
+                relative_path
+            ),
+        )
 
         failure_method = source.split("func heartRateQueryDidFail", 1)[1].split(
             "func updateHeartRate", 1
         )[0]
         ordered_contracts = (
-            "dispatch_async(dispatch_get_main_queue())",
             "guard self.workoutActive else {return}",
             "guard self.heartRateQuery === query else {return}",
             "self.workoutActive = false",
             'self.startStopButton.setTitle("Start")',
             "self.healthStore.stopQuery(query)",
             "self.heartRateQuery = nil",
-            "self.healthStore.endWorkoutSession(workout)",
             "self.workoutSession = nil",
-            'self.label.setText("cannot start")',
+            "self.healthStore.endWorkoutSession(workout)",
+            'self.updateDeviceName("")',
+            'self.updateStatusText("cannot start")',
             'NSLog("Heart-rate query failed")',
         )
         positions = [failure_method.index(contract) for contract in ordered_contracts]
@@ -629,9 +657,10 @@ def test_stopping_workout_immediately_stops_heart_rate_query():
         query_guard = "if let query = self.heartRateQuery"
         stop_query = "self.healthStore.stopQuery(query)"
         clear_query = "self.heartRateQuery = nil"
+        clear_session = "self.workoutSession = nil"
         end_session = "healthStore.endWorkoutSession(workout)"
 
-        for contract in (query_guard, stop_query, clear_query, end_session):
+        for contract in (query_guard, stop_query, clear_query, clear_session, end_session):
             assert_true(
                 contract in stop_branch,
                 "{0} Stop branch must keep {1}".format(relative_path, contract),
@@ -640,8 +669,9 @@ def test_stopping_workout_immediately_stops_heart_rate_query():
             stop_branch.index(query_guard)
             < stop_branch.index(stop_query)
             < stop_branch.index(clear_query)
+            < stop_branch.index(clear_session)
             < stop_branch.index(end_session),
-            "{0} must stop and clear the heart-rate query before ending the workout session".format(
+            "{0} must relinquish query and session ownership before ending the workout session".format(
                 relative_path
             ),
         )
@@ -652,7 +682,7 @@ def test_heart_rate_query_failure_resets_ui_state():
         source = (ROOT / relative_path).read_text()
         method = source.split("func workoutDidStart", 1)[1].split("func workoutDidEnd", 1)[0]
         assert_true(
-            'label.setText("cannot start")' in method,
+            'updateStatusText("cannot start")' in method,
             "{0} query failures must show visible failure text".format(relative_path),
         )
         assert_true(
@@ -689,7 +719,7 @@ def test_workout_session_failure_resets_ui_without_sensitive_logs():
             "{0} workout failures must restore the Start button title".format(relative_path),
         )
         assert_true(
-            'label.setText("cannot start")' in source,
+            'updateStatusText("cannot start")' in source,
             "{0} workout failures must show visible failure text".format(relative_path),
         )
         assert_true(
@@ -731,7 +761,7 @@ def test_workout_session_delegate_updates_ui_on_main_queue():
             failure_method.index("dispatch_async(dispatch_get_main_queue())")
             < failure_method.index("guard self.workoutSession === workoutSession else { return }")
             < failure_method.index("self.workoutActive = false")
-            < failure_method.index('self.label.setText("cannot start")'),
+            < failure_method.index('self.updateStatusText("cannot start")'),
             "{0} workout failure cleanup must run inside the main-queue block".format(relative_path),
         )
         assert_true(
@@ -761,13 +791,13 @@ def test_workout_session_end_resets_ui_state():
 def test_heart_rate_values_are_bounded_before_display():
     for relative_path in INTERFACE_CONTROLLERS:
         source = (ROOT / relative_path).read_text()
-        method = source.split("func updateHeartRate", 1)[1].split("func updateDeviceName", 1)[0]
+        method = source.split("func updateHeartRate", 1)[1].split("func updateStatusText", 1)[0]
         assert_true(
-            "guard value >= 0 && value <= 300 else{return}" in method,
+            "guard value > 0 && value <= 300 else{return}" in method,
             "{0} must reject out-of-range heart-rate values before display".format(relative_path),
         )
         assert_true(
-            method.index("guard value >= 0 && value <= 300 else{return}")
+            method.index("guard value > 0 && value <= 300 else{return}")
             < method.index("String(UInt16(value))"),
             "{0} must bound heart-rate values before UInt16 display conversion".format(relative_path),
         )
@@ -776,7 +806,7 @@ def test_heart_rate_values_are_bounded_before_display():
 def test_heart_rate_batches_display_latest_sample():
     for relative_path in INTERFACE_CONTROLLERS:
         source = (ROOT / relative_path).read_text()
-        method = source.split("func updateHeartRate", 1)[1].split("func updateDeviceName", 1)[0]
+        method = source.split("func updateHeartRate", 1)[1].split("func updateStatusText", 1)[0]
         assert_true(
             "guard let sample = heartRateSamples.last else{return}" in method,
             "{0} must display the newest sample from each callback batch".format(relative_path),
@@ -790,20 +820,28 @@ def test_heart_rate_batches_display_latest_sample():
 def test_main_queue_heart_rate_updates_recheck_workout_state():
     for relative_path in INTERFACE_CONTROLLERS:
         source = (ROOT / relative_path).read_text()
-        method = source.split("func updateHeartRate", 1)[1].split("func updateDeviceName", 1)[0]
+        factory = source.split("func createHeartRateStreamingQuery", 1)[1].split(
+            "func handleHeartRateQueryResult", 1
+        )[0]
+        owner = source.split("func handleHeartRateQueryResult", 1)[1].split(
+            "func heartRateQueryDidFail", 1
+        )[0]
+        method = source.split("func updateHeartRate", 1)[1].split("func updateStatusText", 1)[0]
         assert_true(
-            "dispatch_async(dispatch_get_main_queue())" in method,
-            "{0} heart-rate UI updates must use the main queue".format(relative_path),
+            factory.count("dispatch_async(dispatch_get_main_queue())") == 2,
+            "{0} HealthKit callbacks must enter the main queue".format(relative_path),
         )
         assert_true(
             "guard self.workoutActive else{return}" in method,
-            "{0} must reject stale heart-rate UI work after queueing".format(relative_path),
+            "{0} must reject stale heart-rate UI work on the main queue".format(relative_path),
         )
         assert_true(
-            method.index("dispatch_async(dispatch_get_main_queue())")
-            < method.index("guard self.workoutActive else{return}")
+            owner.index("guard workoutActive else {return}")
+            < owner.index("guard heartRateQuery === query else {return}")
+            < owner.index("anchor = newAnchor")
+            and method.index("guard self.workoutActive else{return}")
             < method.index("guard let sample = heartRateSamples.last else{return}"),
-            "{0} must recheck workout state before reading samples on the main queue".format(relative_path),
+            "{0} must validate state before anchor and sample processing on the main queue".format(relative_path),
         )
 
 
@@ -824,6 +862,7 @@ def main():
         test_heart_rate_callbacks_match_current_query,
         test_heart_rate_query_errors_fail_closed,
         test_heart_animation_generation_guards,
+        test_heart_rate_query_ownership_guards,
         test_workout_session_start_avoids_optional_force_unwrap,
         test_stopping_workout_immediately_stops_heart_rate_query,
         test_heart_rate_query_failure_resets_ui_state,
