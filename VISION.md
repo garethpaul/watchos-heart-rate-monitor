@@ -17,6 +17,7 @@ Priority:
 - Preserve the start/stop workout and heart-rate streaming flow
 - Keep HealthKit authorization visible
 - Keep HealthKit authorization UI updates on the main queue
+- Reject authorization callbacks from earlier WatchKit activation cycles
 - Keep Start disabled until HealthKit authorization allows workouts
 - Keep WatchKit workout session delegate UI cleanup on the main queue
 - Avoid force-unwrapping workout session state while starting workouts
@@ -24,17 +25,26 @@ Priority:
 - Reset visible workout controls when workout sessions fail
 - Reset visible workout controls when workout sessions end normally
 - Ignore heart-rate callbacks after workouts are inactive
+- Stop retained heart-rate queries immediately when workouts are stopped
+- Own HealthKit callback state on the main queue before advancing query anchors
+- Restore retained status, source, and heart geometry when WatchKit reactivates
+- Relinquish explicitly stopped workout sessions before asynchronous ending
+- Fail closed when the current heart-rate query reports an error
+- Reject stale delayed heart animation callbacks after newer beats or teardown
 - Recheck workout state before queued heart-rate UI updates
 - Display the newest sample when HealthKit delivers heart-rate batches
-- Ignore out-of-range heart-rate values before display conversion
+- Ignore zero, nonfinite, and out-of-range heart-rate values before display conversion
 - Avoid storing or uploading heart-rate samples by default
 - Keep GitHub Actions running the static `make check` baseline
+- Keep hosted verification read-only, credential-free, pinned, and protected
+  against structural workflow regressions
+- Require auditable physical Apple Watch verification for HealthKit
+  authorization, workout lifecycle, live samples, interruptions, and privacy
 - Treat Swift/watchOS project versions as legacy until documented
 
 Next priorities:
 
 - Add README setup notes for HealthKit entitlements and watchOS versions
-- Add manual verification notes for device testing
 - Modernize HealthKit APIs in a dedicated pass
 
 Contribution rules:

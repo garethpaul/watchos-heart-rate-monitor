@@ -1,5 +1,51 @@
 # Changes
 
+## 2026-06-19
+
+- Moved anchored-query result ownership onto the main queue before workout,
+  query, error, anchor, or sample state is inspected or changed.
+- Retained status and source text across inactive WatchKit periods and restored
+  that state plus baseline heart geometry during activation.
+- Rejected zero BPM samples and relinquished ending workout sessions before
+  requesting asynchronous termination.
+- Added twelve hostile query-ownership mutations and mirrored lifecycle checks.
+
+## 2026-06-17
+
+- Generation-bound delayed heart-icon callbacks to the active interface and
+  workout, and reset the icon synchronously during teardown.
+- Added mirrored source contracts and fourteen hostile animation mutations.
+
+## 2026-06-16
+
+- Rejected delayed HealthKit callbacks unless they belong to the currently
+  retained heart-rate query, preventing a stopped workout's samples from
+  mutating a newly started workout, including after UI work has been queued.
+- Added mirrored static contracts for query identity and anchor-update order.
+- Failed closed when the current heart-rate streaming query reports an error,
+  stopping and clearing query/session state before generic failure UI.
+
+## 2026-06-14
+
+- Added a privacy-preserving physical Apple Watch verification checklist for
+  HealthKit authorization, workout start/stop, live samples, interruptions,
+  relaunch behavior, redacted evidence, and unresolved failures.
+
+## 2026-06-13
+
+- Rejected HealthKit authorization callbacks from earlier WatchKit activation
+  cycles after the interface deactivates and reactivates.
+- Added mirrored generation-ordering contracts for authorization UI work.
+- Stopped and cleared the retained HealthKit heart-rate query immediately when
+  the user stops a workout, before requesting asynchronous session termination.
+- Added mirrored lifecycle and ordering contracts for immediate query cleanup.
+
+## 2026-06-12
+
+- Ignored queued HealthKit authorization UI work after the WatchKit interface
+  deactivates, in both source and UI-test mirror controllers.
+- Added lifecycle-ordering and exact mirror-synchronization contracts.
+
 ## 2026-06-10
 
 - Selected the newest heart-rate value from each HealthKit callback batch in
@@ -8,8 +54,12 @@
   both WatchKit controller copies so ended sessions cannot display stale data.
 - Made Make execution root-independent and fixed the static CI job to Ubuntu
   24.04 with exact action release annotations.
+- Kept the final bytecode cleanup root-independent when `make check` is invoked
+  through an absolute Makefile path from another working directory.
 - Added a pinned, read-only GitHub Actions matrix for Python 3.10, 3.12, and
-  3.14 that runs the static `make check` baseline.
+  3.14 that runs the static `make check` baseline with credential-free checkout.
+- Added dependency-free workflow tests that reject contradictory or relocated
+  credential settings and other CI policy regressions.
 
 ## 2026-06-09
 

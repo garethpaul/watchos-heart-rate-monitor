@@ -3,6 +3,10 @@
 import plistlib
 from pathlib import Path
 
+from heart_animation_generation_contract import validation_errors as heart_animation_errors
+from heart_rate_query_ownership_contract import validation_errors as query_ownership_errors
+from workflow_contract import validate as validate_workflow
+
 
 ROOT = Path(__file__).resolve().parents[1]
 HEALTHKIT_PLAN_PATH = ROOT / "docs" / "plans" / "2026-06-08-healthkit-privacy-strings.md"
@@ -34,6 +38,36 @@ MAIN_QUEUE_STALE_CALLBACK_PLAN_PATH = (
 )
 LATEST_SAMPLE_PLAN_PATH = (
     ROOT / "docs" / "plans" / "2026-06-10-latest-heart-rate-sample.md"
+)
+AUTHORIZATION_LIFECYCLE_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-12-authorization-lifecycle-guard.md"
+)
+STALE_SESSION_CALLBACK_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-13-stale-workout-session-callbacks.md"
+)
+IMMEDIATE_QUERY_STOP_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-13-watchkit-immediate-query-stop.md"
+)
+AUTHORIZATION_GENERATION_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-13-authorization-callback-generation.md"
+)
+MAKE_ROOT_PROTECTION_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-14-make-root-override-protection.md"
+)
+DEVICE_VERIFICATION_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-14-device-verification-checklist.md"
+)
+CURRENT_QUERY_CALLBACK_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-16-current-heart-rate-query-callback.md"
+)
+QUERY_ERROR_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-16-heart-rate-query-error.md"
+)
+HEART_ANIMATION_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-17-heart-animation-generation.md"
+)
+QUERY_OWNERSHIP_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-19-watchos-main-queue-query-ownership.md"
 )
 WORKFLOW_PATH = ROOT / ".github" / "workflows" / "check.yml"
 INTERFACE_CONTROLLERS = [
@@ -115,31 +149,121 @@ def test_completed_plans_are_in_docs_plans():
     assert_completed_plan(CI_PLAN_PATH, "GitHub Actions CI baseline")
     assert_completed_plan(MAIN_QUEUE_STALE_CALLBACK_PLAN_PATH, "main-queue stale heart-rate callback")
     assert_completed_plan(LATEST_SAMPLE_PLAN_PATH, "latest heart-rate sample")
+    assert_completed_plan(AUTHORIZATION_LIFECYCLE_PLAN_PATH, "authorization lifecycle guard")
+    assert_completed_plan(STALE_SESSION_CALLBACK_PLAN_PATH, "stale workout session callbacks")
+    assert_completed_plan(IMMEDIATE_QUERY_STOP_PLAN_PATH, "immediate heart-rate query stop")
+    assert_completed_plan(AUTHORIZATION_GENERATION_PLAN_PATH, "authorization callback generation")
+    assert_completed_plan(MAKE_ROOT_PROTECTION_PLAN_PATH, "Make root override protection")
+    assert_completed_plan(DEVICE_VERIFICATION_PLAN_PATH, "device verification checklist")
+    assert_completed_plan(CURRENT_QUERY_CALLBACK_PLAN_PATH, "current heart-rate query callback")
+    assert_completed_plan(QUERY_ERROR_PLAN_PATH, "heart-rate query error handling")
+    assert_completed_plan(HEART_ANIMATION_PLAN_PATH, "heart animation generation")
+    assert_completed_plan(QUERY_OWNERSHIP_PLAN_PATH, "main-queue query ownership")
+    checker_main = Path(__file__).read_text().rsplit("def main():", 1)[1]
+    assert_true(
+        "test_device_verification_checklist_is_auditable," in checker_main,
+        "device verification checklist contract must run in the main suite",
+    )
+    assert_true(
+        "test_heart_rate_callbacks_match_current_query," in checker_main,
+        "current heart-rate query callback contract must run in the main suite",
+    )
+    assert_true(
+        "test_heart_rate_query_errors_fail_closed," in checker_main,
+        "heart-rate query error contract must run in the main suite",
+    )
+    assert_true(
+        "test_heart_animation_generation_guards," in checker_main,
+        "heart animation generation contract must run in the main suite",
+    )
+    assert_true(
+        "test_heart_rate_query_ownership_guards," in checker_main,
+        "heart-rate query ownership contract must run in the main suite",
+    )
+
+
+def test_heart_animation_generation_guards():
+    for relative_path in INTERFACE_CONTROLLERS:
+        source = (ROOT / relative_path).read_text()
+        errors = heart_animation_errors(source)
+        assert_true(
+            not errors,
+            "{0}: {1}".format(relative_path, "; ".join(errors)),
+        )
+
+
+def test_heart_rate_query_ownership_guards():
+    for relative_path in INTERFACE_CONTROLLERS:
+        source = (ROOT / relative_path).read_text()
+        errors = query_ownership_errors(source)
+        assert_true(
+            not errors,
+            "{0}: {1}".format(relative_path, "; ".join(errors)),
+        )
+
+
+def test_device_verification_checklist_is_auditable():
+    checklist = (ROOT / "DEVICE_VERIFICATION.md").read_text()
+    normalized_checklist = " ".join(checklist.split())
+    readme = (ROOT / "README.md").read_text()
+    vision = (ROOT / "VISION.md").read_text()
+    changes = (ROOT / "CHANGES.md").read_text()
+
+    for phrase in (
+        "Execution status: Not yet executed",
+        "physical Apple Watch",
+        "Do not record raw heart-rate values",
+        "deny heart-rate read access",
+        "Grant heart-rate read access",
+        "button title changes from `Start` to",
+        "heart-rate label updates",
+        "sample source label",
+        "button title returns to `Start`",
+        "heart-rate label returns to `---`",
+        "interrupt the workout session",
+        "then relaunch",
+        "watch model, watchOS version, paired iPhone iOS version, Xcode",
+        "redacted pass/fail evidence",
+        "Unresolved failures block merge",
+    ):
+        assert_true(
+            phrase in normalized_checklist,
+            "device verification checklist must include {0}".format(phrase),
+        )
+    assert_true("`DEVICE_VERIFICATION.md`" in readme, "README must link the device checklist")
+    assert_true(
+        "docs/plans/2026-06-14-device-verification-checklist.md" in readme,
+        "README must link the device verification plan",
+    )
+    assert_true(
+        "Require auditable physical Apple Watch verification" in vision,
+        "VISION must preserve physical-device verification",
+    )
+    assert_true(
+        "privacy-preserving physical Apple Watch verification checklist" in changes,
+        "CHANGES must record the device verification checklist",
+    )
 
 
 def test_ci_workflow_runs_static_baseline():
     assert_true(WORKFLOW_PATH.is_file(), "GitHub Actions check workflow must exist")
     workflow = WORKFLOW_PATH.read_text()
-    assert_true("permissions:\n  contents: read" in workflow, "CI permissions must be read-only")
-    assert_true("concurrency:" in workflow, "CI must cancel superseded runs")
-    assert_true("cancel-in-progress: true" in workflow, "CI must cancel superseded runs")
-    assert_true("runs-on: ubuntu-24.04" in workflow, "CI must use a fixed Ubuntu runner")
-    assert_true("timeout-minutes: 10" in workflow, "CI runtime must be bounded")
-    assert_true('python-version: ["3.10", "3.12", "3.14"]' in workflow, "CI must cover supported Python versions")
-    assert_true("actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" in workflow, "CI must pin checkout")
-    assert_true("actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405" in workflow, "CI must pin Python setup")
-    assert_true("workflow_dispatch:" in workflow, "CI must support manual verification")
-    assert_true("make check" in workflow, "CI must run make check")
-    assert_true("@v" not in workflow, "CI actions must use immutable commits")
-    assert_true("ubuntu-latest" not in workflow, "CI must not use a floating Ubuntu runner")
-    assert_true("# v6.0.3" in workflow, "checkout pin annotation must identify the exact release")
-    assert_true("# v6.2.0" in workflow, "setup-python pin annotation must identify the exact release")
+    errors = validate_workflow(workflow)
+    assert_true(not errors, "CI workflow must {0}".format(errors[0]) if errors else "")
 
     makefile = (ROOT / "Makefile").read_text()
-    assert_true("ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))" in makefile, "Makefile must resolve the repository root")
+    makefile_lines = set(makefile.splitlines())
+    assert_true("override ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))" in makefile_lines, "Makefile must protect the repository root")
+    assert_true("PYTHON ?= python3" in makefile_lines, "Makefile must preserve the Python command override")
+    assert_true("XCODEBUILD ?= xcodebuild" in makefile_lines, "Makefile must preserve the Xcode command override")
     assert_true("PROJECT := $(ROOT)/HeartyMonitor.xcodeproj" in makefile, "Makefile must use the rooted project path")
     assert_true("$(ROOT)/scripts/check_watchos_contracts.py" in makefile, "Makefile must use the rooted contract path")
+    assert_true("WORKFLOW_CONTRACT_SCRIPT" in makefile, "Makefile must define the workflow mutation checker")
     assert_true('find "$(ROOT)"' in makefile, "Makefile cleanup must stay inside the repository")
+    assert_true(
+        '$(MAKE) -f "$(abspath $(lastword $(MAKEFILE_LIST)))" clean' in makefile,
+        "Makefile final cleanup must remain root-independent",
+    )
 
     for relative_path in ["README.md", "VISION.md", "SECURITY.md", "CHANGES.md"]:
         doc = (ROOT / relative_path).read_text()
@@ -242,6 +366,95 @@ def test_healthkit_authorization_controls_start_button_state():
         )
 
 
+def test_authorization_callbacks_ignore_inactive_interfaces():
+    sources = []
+    for relative_path in INTERFACE_CONTROLLERS:
+        source = (ROOT / relative_path).read_text()
+        sources.append(source)
+        will_activate = source.split("override func willActivate()", 1)[1].split(
+            "override func didDeactivate()", 1
+        )[0]
+        authorization_block = will_activate.split(
+            "healthStore.requestAuthorizationToShareTypes", 1
+        )[1]
+        did_deactivate = source.split("override func didDeactivate()", 1)[1].split(
+            "func displayNotAllowed", 1
+        )[0]
+
+        assert_true(
+            "var interfaceActive = false" in source,
+            "{0} must track interface lifecycle state".format(relative_path),
+        )
+        assert_true(
+            will_activate.index("interfaceActive = true")
+            < will_activate.index("healthStore.requestAuthorizationToShareTypes"),
+            "{0} must mark activation before requesting authorization".format(relative_path),
+        )
+        assert_true(
+            "guard self.interfaceActive" in authorization_block,
+            "{0} must ignore stale authorization UI work".format(relative_path),
+        )
+        assert_true(
+            authorization_block.index("dispatch_async(dispatch_get_main_queue())")
+            < authorization_block.index("guard self.interfaceActive")
+            < authorization_block.index("if success == true"),
+            "{0} must recheck lifecycle state on the main queue before UI updates".format(relative_path),
+        )
+        assert_true(
+            did_deactivate.index("interfaceActive = false")
+            < did_deactivate.index("super.didDeactivate()"),
+            "{0} must invalidate callbacks during deactivation".format(relative_path),
+        )
+
+    assert_true(sources[0] == sources[1], "WatchKit source and UI-test mirror controllers must remain identical")
+
+
+def test_authorization_callbacks_match_current_activation_generation():
+    sources = []
+    for relative_path in INTERFACE_CONTROLLERS:
+        source = (ROOT / relative_path).read_text()
+        sources.append(source)
+        will_activate = source.split("override func willActivate()", 1)[1].split(
+            "override func didDeactivate()", 1
+        )[0]
+        authorization_block = will_activate.split(
+            "healthStore.requestAuthorizationToShareTypes", 1
+        )[1]
+        did_deactivate = source.split("override func didDeactivate()", 1)[1].split(
+            "func displayNotAllowed", 1
+        )[0]
+
+        assert_true(
+            "var authorizationGeneration = 0" in source,
+            "{0} must track authorization activation generations".format(relative_path),
+        )
+        assert_true(
+            will_activate.index("interfaceActive = true")
+            < will_activate.index("authorizationGeneration += 1")
+            < will_activate.index("let activationGeneration = authorizationGeneration")
+            < will_activate.index("healthStore.requestAuthorizationToShareTypes"),
+            "{0} must advance and capture the generation before authorization".format(relative_path),
+        )
+        assert_true(
+            "self.authorizationGeneration == activationGeneration" in authorization_block,
+            "{0} must reject callbacks from older activations".format(relative_path),
+        )
+        assert_true(
+            authorization_block.index("dispatch_async(dispatch_get_main_queue())")
+            < authorization_block.index("self.authorizationGeneration == activationGeneration")
+            < authorization_block.index("if success == true"),
+            "{0} must compare generations on the main queue before UI updates".format(relative_path),
+        )
+        assert_true(
+            did_deactivate.index("interfaceActive = false")
+            < did_deactivate.index("authorizationGeneration += 1")
+            < did_deactivate.index("super.didDeactivate()"),
+            "{0} must invalidate the authorization generation during deactivation".format(relative_path),
+        )
+
+    assert_true(sources[0] == sources[1], "WatchKit source and UI-test mirror controllers must remain identical")
+
+
 def test_healthkit_update_handler_guards_anchor():
     for relative_path in INTERFACE_CONTROLLERS:
         source = (ROOT / relative_path).read_text()
@@ -258,15 +471,162 @@ def test_healthkit_update_handler_guards_anchor():
 def test_heart_rate_callbacks_ignore_inactive_workouts():
     for relative_path in INTERFACE_CONTROLLERS:
         source = (ROOT / relative_path).read_text()
-        method = source.split("func createHeartRateStreamingQuery", 1)[1].split("func updateHeartRate", 1)[0]
+        method = source.split("func handleHeartRateQueryResult", 1)[1].split(
+            "func heartRateQueryDidFail", 1
+        )[0]
         assert_true(
-            method.count("guard self.workoutActive else {return}") >= 2,
+            "guard workoutActive else {return}" in method,
             "{0} heart-rate callbacks must ignore inactive workouts".format(relative_path),
         )
         assert_true(
-            method.index("guard self.workoutActive else {return}")
-            < method.index("self.anchor = newAnchor"),
+            method.index("guard workoutActive else {return}")
+            < method.index("anchor = newAnchor"),
             "{0} heart-rate callbacks must check workout state before anchor/UI updates".format(relative_path),
+        )
+
+
+def test_heart_rate_callbacks_match_current_query():
+    for relative_path in INTERFACE_CONTROLLERS:
+        source = (ROOT / relative_path).read_text()
+        query_factory = source.split("func createHeartRateStreamingQuery", 1)[1].split(
+            "func handleHeartRateQueryResult", 1
+        )[0]
+        initial_callback, update_callback = query_factory.split("heartRateQuery.updateHandler", 1)
+        for callback_name, callback in (
+            ("initial", initial_callback),
+            ("update", update_callback),
+        ):
+            assert_true(
+                "dispatch_async(dispatch_get_main_queue())" in callback
+                and "self.handleHeartRateQueryResult(" in callback,
+                "{0} {1} callback must route through main-queue ownership".format(
+                    relative_path, callback_name
+                ),
+            )
+
+        owner = source.split("func handleHeartRateQueryResult", 1)[1].split(
+            "func heartRateQueryDidFail", 1
+        )[0]
+        query_guard = "guard heartRateQuery === query else {return}"
+        assert_true(
+            owner.index(query_guard)
+            < owner.index("anchor = newAnchor")
+            < owner.index("updateHeartRate(samples, query: query)"),
+            "{0} main-queue owner must match the retained query before anchor mutation".format(
+                relative_path
+            ),
+        )
+
+        update_method = source.split("func updateHeartRate", 1)[1].split(
+            "func updateStatusText", 1
+        )[0]
+        queued_query_guard = "guard self.heartRateQuery === query else{return}"
+        assert_true(
+            "(samples: [HKSample]?, query: HKQuery)" in update_method,
+            "{0} heart-rate UI work must retain callback query identity".format(
+                relative_path
+            ),
+        )
+        assert_true(
+            queued_query_guard in update_method,
+            "{0} heart-rate UI work must reject stale queries".format(relative_path),
+        )
+        assert_true(
+            "dispatch_async(" not in update_method
+            and update_method.index(queued_query_guard)
+            < update_method.index("guard let sample = heartRateSamples.last else{return}"),
+            "{0} main-queue UI work must match the retained query before reading samples".format(
+                relative_path
+            ),
+        )
+
+
+def test_heart_rate_query_errors_fail_closed():
+    sources = []
+    for relative_path in INTERFACE_CONTROLLERS:
+        source = (ROOT / relative_path).read_text()
+        sources.append(source)
+        query_method = source.split("func createHeartRateStreamingQuery", 1)[1].split(
+            "func handleHeartRateQueryResult", 1
+        )[0]
+        initial_callback, update_callback = query_method.split("heartRateQuery.updateHandler", 1)
+        for callback_name, callback in (
+            ("initial", initial_callback),
+            ("update", update_callback),
+        ):
+            for contract in (
+                "dispatch_async(dispatch_get_main_queue())",
+                "self.handleHeartRateQueryResult(",
+            ):
+                assert_true(
+                    contract in callback,
+                    "{0} {1} callback must include {2}".format(
+                        relative_path, callback_name, contract
+                    ),
+                )
+
+        owner = source.split("func handleHeartRateQueryResult", 1)[1].split(
+            "func heartRateQueryDidFail", 1
+        )[0]
+        owner_contracts = (
+            "guard workoutActive else {return}",
+            "guard heartRateQuery === query else {return}",
+            "guard error == nil else",
+            "heartRateQueryDidFail(query)",
+            "guard let newAnchor = newAnchor else {return}",
+            "anchor = newAnchor",
+        )
+        owner_positions = [owner.index(contract) for contract in owner_contracts]
+        assert_true(
+            owner_positions == sorted(owner_positions),
+            "{0} query owner must reject current-query errors before anchor processing".format(
+                relative_path
+            ),
+        )
+
+        failure_method = source.split("func heartRateQueryDidFail", 1)[1].split(
+            "func updateHeartRate", 1
+        )[0]
+        ordered_contracts = (
+            "guard self.workoutActive else {return}",
+            "guard self.heartRateQuery === query else {return}",
+            "self.workoutActive = false",
+            'self.startStopButton.setTitle("Start")',
+            "self.healthStore.stopQuery(query)",
+            "self.heartRateQuery = nil",
+            "self.workoutSession = nil",
+            "self.healthStore.endWorkoutSession(workout)",
+            'self.updateDeviceName("")',
+            'self.updateStatusText("cannot start")',
+            'NSLog("Heart-rate query failed")',
+        )
+        positions = [failure_method.index(contract) for contract in ordered_contracts]
+        assert_true(
+            positions == sorted(positions),
+            "{0} query failure must validate identity and clear query/session UI state in order".format(
+                relative_path
+            ),
+        )
+        assert_true(
+            "NSLog(error" not in failure_method and "localizedDescription" not in source,
+            "{0} query failure logs must not expose HealthKit error details".format(relative_path),
+        )
+
+    assert_true(
+        sources[0] == sources[1],
+        "WatchKit source and UI-test mirror controllers must remain identical",
+    )
+
+    docs = {
+        "README.md": "Heart-rate query errors stop and clear the current query and workout",
+        "SECURITY.md": "Heart-rate query errors fail closed without logging HealthKit details",
+        "VISION.md": "Fail closed when the current heart-rate query reports an error",
+        "CHANGES.md": "Failed closed when the current heart-rate streaming query reports an error",
+    }
+    for relative_path, phrase in docs.items():
+        assert_true(
+            phrase in (ROOT / relative_path).read_text(),
+            "{0} must document heart-rate query error handling".format(relative_path),
         )
 
 
@@ -287,12 +647,42 @@ def test_workout_session_start_avoids_optional_force_unwrap():
         )
 
 
+def test_stopping_workout_immediately_stops_heart_rate_query():
+    for relative_path in INTERFACE_CONTROLLERS:
+        source = (ROOT / relative_path).read_text()
+        action = source.split("@IBAction func startBtnTapped()", 1)[1].split(
+            "func startWorkout()", 1
+        )[0]
+        stop_branch = action.split("} else {", 1)[0]
+        query_guard = "if let query = self.heartRateQuery"
+        stop_query = "self.healthStore.stopQuery(query)"
+        clear_query = "self.heartRateQuery = nil"
+        clear_session = "self.workoutSession = nil"
+        end_session = "healthStore.endWorkoutSession(workout)"
+
+        for contract in (query_guard, stop_query, clear_query, clear_session, end_session):
+            assert_true(
+                contract in stop_branch,
+                "{0} Stop branch must keep {1}".format(relative_path, contract),
+            )
+        assert_true(
+            stop_branch.index(query_guard)
+            < stop_branch.index(stop_query)
+            < stop_branch.index(clear_query)
+            < stop_branch.index(clear_session)
+            < stop_branch.index(end_session),
+            "{0} must relinquish query and session ownership before ending the workout session".format(
+                relative_path
+            ),
+        )
+
+
 def test_heart_rate_query_failure_resets_ui_state():
     for relative_path in INTERFACE_CONTROLLERS:
         source = (ROOT / relative_path).read_text()
         method = source.split("func workoutDidStart", 1)[1].split("func workoutDidEnd", 1)[0]
         assert_true(
-            'label.setText("cannot start")' in method,
+            'updateStatusText("cannot start")' in method,
             "{0} query failures must show visible failure text".format(relative_path),
         )
         assert_true(
@@ -329,7 +719,7 @@ def test_workout_session_failure_resets_ui_without_sensitive_logs():
             "{0} workout failures must restore the Start button title".format(relative_path),
         )
         assert_true(
-            'label.setText("cannot start")' in source,
+            'updateStatusText("cannot start")' in source,
             "{0} workout failures must show visible failure text".format(relative_path),
         )
         assert_true(
@@ -352,9 +742,12 @@ def test_workout_session_delegate_updates_ui_on_main_queue():
         )
         assert_true(
             state_method.index("dispatch_async(dispatch_get_main_queue())")
+            < state_method.index("guard self.workoutSession === workoutSession else { return }")
+            < state_method.index("switch toState")
+            < state_method.index("guard self.workoutActive else { return }")
             < state_method.index("self.workoutDidStart(date)")
             < state_method.index("self.workoutDidEnd(date)"),
-            "{0} workout start/end callbacks must run inside the main-queue block".format(relative_path),
+            "{0} workout callbacks must reject stale sessions and late starts on the main queue".format(relative_path),
         )
 
         failure_method = source.split(
@@ -366,8 +759,9 @@ def test_workout_session_delegate_updates_ui_on_main_queue():
         )
         assert_true(
             failure_method.index("dispatch_async(dispatch_get_main_queue())")
+            < failure_method.index("guard self.workoutSession === workoutSession else { return }")
             < failure_method.index("self.workoutActive = false")
-            < failure_method.index('self.label.setText("cannot start")'),
+            < failure_method.index('self.updateStatusText("cannot start")'),
             "{0} workout failure cleanup must run inside the main-queue block".format(relative_path),
         )
         assert_true(
@@ -397,13 +791,13 @@ def test_workout_session_end_resets_ui_state():
 def test_heart_rate_values_are_bounded_before_display():
     for relative_path in INTERFACE_CONTROLLERS:
         source = (ROOT / relative_path).read_text()
-        method = source.split("func updateHeartRate", 1)[1].split("func updateDeviceName", 1)[0]
+        method = source.split("func updateHeartRate", 1)[1].split("func updateStatusText", 1)[0]
         assert_true(
-            "guard value >= 0 && value <= 300 else{return}" in method,
+            "guard value > 0 && value <= 300 else{return}" in method,
             "{0} must reject out-of-range heart-rate values before display".format(relative_path),
         )
         assert_true(
-            method.index("guard value >= 0 && value <= 300 else{return}")
+            method.index("guard value > 0 && value <= 300 else{return}")
             < method.index("String(UInt16(value))"),
             "{0} must bound heart-rate values before UInt16 display conversion".format(relative_path),
         )
@@ -412,7 +806,7 @@ def test_heart_rate_values_are_bounded_before_display():
 def test_heart_rate_batches_display_latest_sample():
     for relative_path in INTERFACE_CONTROLLERS:
         source = (ROOT / relative_path).read_text()
-        method = source.split("func updateHeartRate", 1)[1].split("func updateDeviceName", 1)[0]
+        method = source.split("func updateHeartRate", 1)[1].split("func updateStatusText", 1)[0]
         assert_true(
             "guard let sample = heartRateSamples.last else{return}" in method,
             "{0} must display the newest sample from each callback batch".format(relative_path),
@@ -426,20 +820,28 @@ def test_heart_rate_batches_display_latest_sample():
 def test_main_queue_heart_rate_updates_recheck_workout_state():
     for relative_path in INTERFACE_CONTROLLERS:
         source = (ROOT / relative_path).read_text()
-        method = source.split("func updateHeartRate", 1)[1].split("func updateDeviceName", 1)[0]
+        factory = source.split("func createHeartRateStreamingQuery", 1)[1].split(
+            "func handleHeartRateQueryResult", 1
+        )[0]
+        owner = source.split("func handleHeartRateQueryResult", 1)[1].split(
+            "func heartRateQueryDidFail", 1
+        )[0]
+        method = source.split("func updateHeartRate", 1)[1].split("func updateStatusText", 1)[0]
         assert_true(
-            "dispatch_async(dispatch_get_main_queue())" in method,
-            "{0} heart-rate UI updates must use the main queue".format(relative_path),
+            factory.count("dispatch_async(dispatch_get_main_queue())") == 2,
+            "{0} HealthKit callbacks must enter the main queue".format(relative_path),
         )
         assert_true(
             "guard self.workoutActive else{return}" in method,
-            "{0} must reject stale heart-rate UI work after queueing".format(relative_path),
+            "{0} must reject stale heart-rate UI work on the main queue".format(relative_path),
         )
         assert_true(
-            method.index("dispatch_async(dispatch_get_main_queue())")
-            < method.index("guard self.workoutActive else{return}")
+            owner.index("guard workoutActive else {return}")
+            < owner.index("guard heartRateQuery === query else {return}")
+            < owner.index("anchor = newAnchor")
+            and method.index("guard self.workoutActive else{return}")
             < method.index("guard let sample = heartRateSamples.last else{return}"),
-            "{0} must recheck workout state before reading samples on the main queue".format(relative_path),
+            "{0} must validate state before anchor and sample processing on the main queue".format(relative_path),
         )
 
 
@@ -448,13 +850,21 @@ def main():
         test_healthkit_plists_have_share_usage_description,
         test_healthkit_entitlements_are_enabled,
         test_completed_plans_are_in_docs_plans,
+        test_device_verification_checklist_is_auditable,
         test_ci_workflow_runs_static_baseline,
         test_heart_rate_streaming_query_is_retained_and_stopped,
         test_authorization_denial_updates_ui_on_main_queue,
         test_healthkit_authorization_controls_start_button_state,
+        test_authorization_callbacks_ignore_inactive_interfaces,
+        test_authorization_callbacks_match_current_activation_generation,
         test_healthkit_update_handler_guards_anchor,
         test_heart_rate_callbacks_ignore_inactive_workouts,
+        test_heart_rate_callbacks_match_current_query,
+        test_heart_rate_query_errors_fail_closed,
+        test_heart_animation_generation_guards,
+        test_heart_rate_query_ownership_guards,
         test_workout_session_start_avoids_optional_force_unwrap,
+        test_stopping_workout_immediately_stops_heart_rate_query,
         test_heart_rate_query_failure_resets_ui_state,
         test_workout_session_failure_resets_ui_without_sensitive_logs,
         test_workout_session_delegate_updates_ui_on_main_queue,

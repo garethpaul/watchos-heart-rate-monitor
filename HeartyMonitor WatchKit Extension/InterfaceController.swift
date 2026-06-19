@@ -22,6 +22,11 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
     
     //State of the app - is the workout activated
     var workoutActive = false
+    var interfaceActive = false
+    var authorizationGeneration = 0
+    var heartAnimationGeneration = 0
+    var statusText = "---"
+    var currentDeviceName = ""
     
     // define the activity type and location
     var workoutSession : HKWorkoutSession?
@@ -36,9 +41,14 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
     
     override func willActivate() {
         super.willActivate()
-        
+        interfaceActive = true
+        resetHeartAnimation()
+        renderInterfaceState()
+        authorizationGeneration += 1
+        let activationGeneration = authorizationGeneration
+
         guard HKHealthStore.isHealthDataAvailable() == true else {
-            label.setText("not available")
+            updateStatusText("not available")
             startStopButton.setEnabled(false)
             return
         }
@@ -52,6 +62,8 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
         startStopButton.setEnabled(false)
         healthStore.requestAuthorizationToShareTypes(nil, readTypes: dataTypes) { (success, error) -> Void in
             dispatch_async(dispatch_get_main_queue()) {
+                guard self.interfaceActive &&
+                    self.authorizationGeneration == activationGeneration else { return }
                 if success == true {
                     self.startStopButton.setEnabled(true)
                 } else if success == false {
@@ -60,16 +72,25 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
             }
         }
     }
+
+    override func didDeactivate() {
+        interfaceActive = false
+        authorizationGeneration += 1
+        resetHeartAnimation()
+        super.didDeactivate()
+    }
     
     func displayNotAllowed() {
-        label.setText("not allowed")
+        updateStatusText("not allowed")
         startStopButton.setEnabled(false)
     }
     
     func workoutSession(workoutSession: HKWorkoutSession, didChangeToState toState: HKWorkoutSessionState, fromState: HKWorkoutSessionState, date: NSDate) {
         dispatch_async(dispatch_get_main_queue()) {
+            guard self.workoutSession === workoutSession else { return }
             switch toState {
             case .Running:
+                guard self.workoutActive else { return }
                 self.workoutDidStart(date)
             case .Ended:
                 self.workoutDidEnd(date)
@@ -81,14 +102,17 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
     
     func workoutSession(workoutSession: HKWorkoutSession, didFailWithError error: NSError) {
         dispatch_async(dispatch_get_main_queue()) {
+            guard self.workoutSession === workoutSession else { return }
             self.workoutActive = false
+            self.resetHeartAnimation()
             self.startStopButton.setTitle("Start")
             if let query = self.heartRateQuery {
                 self.healthStore.stopQuery(query)
                 self.heartRateQuery = nil
             }
             self.workoutSession = nil
-            self.label.setText("cannot start")
+            self.updateDeviceName("")
+            self.updateStatusText("cannot start")
             NSLog("Workout session failed")
         }
     }
@@ -99,24 +123,28 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
             healthStore.executeQuery(query)
         } else {
             workoutActive = false
+            resetHeartAnimation()
             startStopButton.setTitle("Start")
             if let workout = workoutSession {
+                workoutSession = nil
                 healthStore.endWorkoutSession(workout)
             }
-            workoutSession = nil
-            label.setText("cannot start")
+            updateDeviceName("")
+            updateStatusText("cannot start")
         }
     }
     
     func workoutDidEnd(date : NSDate) {
         workoutActive = false
+        resetHeartAnimation()
         startStopButton.setTitle("Start")
         if let query = heartRateQuery {
             healthStore.stopQuery(query)
             heartRateQuery = nil
         }
         workoutSession = nil
-        label.setText("---")
+        updateDeviceName("")
+        updateStatusText("---")
     }
     
     // MARK: - Actions
@@ -124,14 +152,24 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
         if (self.workoutActive) {
             //finish the current workout
             self.workoutActive = false
+            self.resetHeartAnimation()
             self.startStopButton.setTitle("Start")
+            self.updateStatusText("---")
+            self.updateDeviceName("")
+            if let query = self.heartRateQuery {
+                self.healthStore.stopQuery(query)
+                self.heartRateQuery = nil
+            }
             if let workout = self.workoutSession {
+                self.workoutSession = nil
                 healthStore.endWorkoutSession(workout)
             }
         } else {
             //start a new workout
             self.workoutActive = true
             self.startStopButton.setTitle("Stop")
+            self.updateStatusText("---")
+            self.updateDeviceName("")
             startWorkout()
         }
         
@@ -151,43 +189,94 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
         guard let quantityType = HKObjectType.quantityTypeForIdentifier(HKQuantityTypeIdentifierHeartRate) else { return nil }
         
         let heartRateQuery = HKAnchoredObjectQuery(type: quantityType, predicate: nil, anchor: anchor, limit: Int(HKObjectQueryNoLimit)) { (query, sampleObjects, deletedObjects, newAnchor, error) -> Void in
-            guard self.workoutActive else {return}
-            guard let newAnchor = newAnchor else {return}
-            self.anchor = newAnchor
-            self.updateHeartRate(sampleObjects)
+            dispatch_async(dispatch_get_main_queue()) {
+                self.handleHeartRateQueryResult(query, samples: sampleObjects, newAnchor: newAnchor, error: error)
+            }
         }
         
         heartRateQuery.updateHandler = {(query, samples, deleteObjects, newAnchor, error) -> Void in
-            guard self.workoutActive else {return}
-            guard let newAnchor = newAnchor else {return}
-            self.anchor = newAnchor
-            self.updateHeartRate(samples)
+            dispatch_async(dispatch_get_main_queue()) {
+                self.handleHeartRateQueryResult(query, samples: samples, newAnchor: newAnchor, error: error)
+            }
         }
         return heartRateQuery
     }
+
+    func handleHeartRateQueryResult(query: HKQuery, samples: [HKSample]?, newAnchor: HKQueryAnchor?, error: NSError?) {
+        guard workoutActive else {return}
+        guard heartRateQuery === query else {return}
+        guard error == nil else {
+            heartRateQueryDidFail(query)
+            return
+        }
+        guard let newAnchor = newAnchor else {return}
+        anchor = newAnchor
+        updateHeartRate(samples, query: query)
+    }
+
+    func heartRateQueryDidFail(query: HKQuery) {
+        guard self.workoutActive else {return}
+        guard self.heartRateQuery === query else {return}
+        self.workoutActive = false
+        self.resetHeartAnimation()
+        self.startStopButton.setTitle("Start")
+        self.healthStore.stopQuery(query)
+        self.heartRateQuery = nil
+        if let workout = self.workoutSession {
+            self.workoutSession = nil
+            self.healthStore.endWorkoutSession(workout)
+        }
+        self.updateDeviceName("")
+        self.updateStatusText("cannot start")
+        NSLog("Heart-rate query failed")
+    }
     
-    func updateHeartRate(samples: [HKSample]?) {
+    func updateHeartRate(samples: [HKSample]?, query: HKQuery) {
         guard let heartRateSamples = samples as? [HKQuantitySample] else {return}
         
-        dispatch_async(dispatch_get_main_queue()) {
-            guard self.workoutActive else{return}
-            guard let sample = heartRateSamples.last else{return}
-            let value = sample.quantity.doubleValueForUnit(self.heartRateUnit)
-            guard value >= 0 && value <= 300 else{return}
-            self.label.setText(String(UInt16(value)))
-            
-            // retrieve source from sample
-            let name = sample.sourceRevision.source.name
-            self.updateDeviceName(name)
-            self.animateHeart()
-        }
+        guard self.workoutActive else{return}
+        guard self.heartRateQuery === query else{return}
+        guard let sample = heartRateSamples.last else{return}
+        let value = sample.quantity.doubleValueForUnit(self.heartRateUnit)
+        guard value > 0 && value <= 300 else{return}
+        self.updateStatusText(String(UInt16(value)))
+
+        // retrieve source from sample
+        let name = sample.sourceRevision.source.name
+        self.updateDeviceName(name)
+        self.animateHeart()
     }
-    
+
+    func updateStatusText(text: String) {
+        statusText = text
+        guard interfaceActive else {return}
+        label.setText(text)
+    }
+
     func updateDeviceName(deviceName: String) {
+        currentDeviceName = deviceName
+        guard interfaceActive else {return}
         deviceLabel.setText(deviceName)
     }
+
+    func renderInterfaceState() {
+        guard interfaceActive else {return}
+        label.setText(statusText)
+        deviceLabel.setText(currentDeviceName)
+        startStopButton.setTitle(workoutActive ? "Stop" : "Start")
+    }
     
+    func resetHeartAnimation() {
+        heartAnimationGeneration += 1
+        heart.setWidth(50)
+        heart.setHeight(80)
+    }
+
     func animateHeart() {
+        guard interfaceActive else {return}
+        guard workoutActive else {return}
+        heartAnimationGeneration += 1
+        let animationGeneration = heartAnimationGeneration
         self.animateWithDuration(0.5) {
             self.heart.setWidth(60)
             self.heart.setHeight(90)
@@ -197,6 +286,9 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
         let queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)
         dispatch_after(when, queue) {
             dispatch_async(dispatch_get_main_queue(), {
+                guard self.interfaceActive else {return}
+                guard self.workoutActive else {return}
+                guard self.heartAnimationGeneration == animationGeneration else {return}
                 self.animateWithDuration(0.5, animations: {
                     self.heart.setWidth(50)
                     self.heart.setHeight(80)

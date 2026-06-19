@@ -30,7 +30,9 @@ Helpful reports include:
 - Review found file, document, data, or media parsing flows; changes in those areas should receive security-focused review before merge.
 - No primary dependency manifest was detected in the repository root. If dependencies are added later, include a manifest and prefer reproducible installation instructions.
 - GitHub Actions runs the static `make check` baseline across maintained Python versions; keep
-  that hosted path free of real HealthKit samples or device identifiers.
+  that hosted path free of real HealthKit samples or device identifiers. The
+  workflow uses read-only permissions, credential-free checkout, immutable
+  action pins, bounded runtime, and structural policy mutation tests.
 
 ## Mobile Privacy Notes
 
@@ -42,6 +44,23 @@ that show a workout can be started without successful HealthKit authorization
 should include the device or simulator state used to reproduce it.
 Queued heart-rate UI work must recheck workout state on the main queue so a
 sample cannot reappear after session cleanup.
+Anchored-query callbacks must enter the main queue before reading query
+identity or advancing the shared anchor. Status and source values must be kept
+outside WatchKit interface objects because inactive interface changes are
+ignored by the system.
+Queued authorization UI work must match the current WatchKit activation
+generation so a callback from an earlier activation cannot enable or deny
+controls after the interface reactivates.
+Stopping a workout must stop and clear its retained heart-rate query before
+requesting asynchronous workout-session termination so an older query cannot
+remain executing after a restart.
+The controller must also clear its retained workout session before requesting
+that explicit termination so late end or failure callbacks no longer own state.
+Heart-rate query errors fail closed without logging HealthKit details: the
+current query and workout are stopped and cleared before generic failure UI is
+shown.
+Delayed heart animation callbacks must match the active interface, workout,
+and animation generation before mutating WatchKit UI.
 
 ## Dependency and Supply Chain Security
 

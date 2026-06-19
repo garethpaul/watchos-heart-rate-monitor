@@ -55,13 +55,29 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   entitlement, plan, query-lifecycle, authorization UI-thread, workout
   authorization Start-button state, session-start, workout delegate UI-thread,
   query-start failure, inactive and queued stale heart-rate callbacks,
-  heart-rate value-bound, and workout session-failure/session-end contracts.
+  activation-generation authorization guards, immediate query-stop,
+  main-queue query ownership, current-query error cleanup, generation-bound
+  heart animation, heart-rate value-bound, and workout
+  session-failure/session-end contracts.
+- Heart-rate query errors stop and clear the current query and workout, restore
+  the Start state, and use a generic failure message without exposing details.
+- Delayed heart-icon callbacks recheck interface, workout, and animation
+  generation state; teardown paths invalidate queued work and restore the
+  default icon size synchronously.
+- Anchored-query callbacks enter the main queue before checking query identity
+  or advancing the shared anchor. Status and source text are retained while the
+  interface is inactive and restored during the next activation.
 - Completed maintenance plans live under `docs/plans` and are checked by
   `make check`.
 - GitHub Actions runs the same static contracts on Python 3.10, 3.12, and 3.14
-  on Ubuntu 24.04 with read-only permissions, immutable action pins, and
-  cancellation for superseded runs.
+  on Ubuntu 24.04 with read-only permissions, credential-free checkout,
+  immutable action pins, and cancellation for superseded runs. Dependency-free
+  mutations reject contradictory credential settings and policy regressions.
 - Xcode's test action or `xcodebuild test` can be used with the appropriate scheme and destination on a macOS/Xcode workstation.
+- `DEVICE_VERIFICATION.md` defines the required physical Apple Watch and
+  HealthKit authorization, workout, live-sample, stop, interruption, privacy,
+  and redacted evidence checks. Its execution status remains explicit until a
+  reviewer performs the matrix on hardware.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
@@ -108,6 +124,21 @@ When the required SDK or runtime is unavailable, use static checks and source re
   mirrored guard against UI updates queued before a workout ends.
 - See `docs/plans/2026-06-10-latest-heart-rate-sample.md` for mirrored
   latest-sample selection when HealthKit delivers callback batches.
+- See `docs/plans/2026-06-12-authorization-lifecycle-guard.md` for the mirrored
+  guard against stale authorization UI work after interface deactivation.
+- See `docs/plans/2026-06-13-authorization-callback-generation.md` for rejecting
+  authorization callbacks captured by an earlier interface activation.
+- See `docs/plans/2026-06-13-stale-workout-session-callbacks.md` for rejecting
+  obsolete session callbacks and late workout starts on the main queue.
+- See `docs/plans/2026-06-13-watchkit-immediate-query-stop.md` for stopping and
+  clearing the retained heart-rate query before workout-session termination.
+- See `docs/plans/2026-06-14-device-verification-checklist.md` for the physical
+  Apple Watch verification and evidence contract.
+- See `docs/plans/2026-06-16-heart-rate-query-error.md` for fail-closed current
+  query error handling and mirrored controller coverage.
+- See `docs/plans/2026-06-19-watchos-main-queue-query-ownership.md` for
+  main-queue anchor ownership, inactive interface restoration, and explicit
+  workout-stop ownership.
 
 ## Contributing
 
