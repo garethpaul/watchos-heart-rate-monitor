@@ -1,5 +1,13 @@
 # Changes
 
+## 2026-06-21
+
+- Isolated Make verification authority from caller-controlled roots, shells,
+  startup files, Makefile lists, unsafe modes, executable Make syntax, and
+  later single-colon public recipe replacement.
+- Added literal Python/Xcode and cleanup-containment authority coverage and
+  invoked hosted verification through `/usr/bin/make`.
+
 ## 2026-06-19
 
 - Moved anchored-query result ownership onto the main queue before workout,

@@ -27,7 +27,7 @@ def validate(workflow):
     if actions != [CHECKOUT_ACTION, SETUP_ACTION]: errors.append("use only the reviewed checkout and setup-python actions")
     if workflow.count("persist-credentials:") != 1: errors.append("configure checkout credential persistence exactly once")
     if len(re.findall(r"^          python-version: \$\{\{ matrix\.python-version \}\}$", workflow, re.MULTILINE)) != 1: errors.append("select the matrix Python version exactly once")
-    if len(re.findall(r"^        run: make check$", workflow, re.MULTILINE)) != 1: errors.append("run the canonical gate exactly once")
+    if len(re.findall(r"^        run: /usr/bin/make check$", workflow, re.MULTILINE)) != 1: errors.append("run the canonical gate through the system Make exactly once")
     if "continue-on-error" in workflow: errors.append("not allow verification failures")
     if "xcodebuild" in workflow: errors.append("not imply an unsupported hosted Xcode build")
     return errors
