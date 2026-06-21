@@ -69,6 +69,9 @@ HEART_ANIMATION_PLAN_PATH = (
 QUERY_OWNERSHIP_PLAN_PATH = (
     ROOT / "docs" / "plans" / "2026-06-19-watchos-main-queue-query-ownership.md"
 )
+MAKE_AUTHORITY_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-21-make-authority-isolation.md"
+)
 WORKFLOW_PATH = ROOT / ".github" / "workflows" / "check.yml"
 INTERFACE_CONTROLLERS = [
     Path("HeartyMonitor WatchKit Extension/InterfaceController.swift"),
@@ -159,6 +162,7 @@ def test_completed_plans_are_in_docs_plans():
     assert_completed_plan(QUERY_ERROR_PLAN_PATH, "heart-rate query error handling")
     assert_completed_plan(HEART_ANIMATION_PLAN_PATH, "heart animation generation")
     assert_completed_plan(QUERY_OWNERSHIP_PLAN_PATH, "main-queue query ownership")
+    assert_completed_plan(MAKE_AUTHORITY_PLAN_PATH, "Make authority isolation")
     checker_main = Path(__file__).read_text().rsplit("def main():", 1)[1]
     assert_true(
         "test_device_verification_checklist_is_auditable," in checker_main,
@@ -253,17 +257,46 @@ def test_ci_workflow_runs_static_baseline():
 
     makefile = (ROOT / "Makefile").read_text()
     makefile_lines = set(makefile.splitlines())
-    assert_true("override ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))" in makefile_lines, "Makefile must protect the repository root")
-    assert_true("PYTHON ?= python3" in makefile_lines, "Makefile must preserve the Python command override")
-    assert_true("XCODEBUILD ?= xcodebuild" in makefile_lines, "Makefile must preserve the Xcode command override")
-    assert_true("PROJECT := $(ROOT)/HeartyMonitor.xcodeproj" in makefile, "Makefile must use the rooted project path")
-    assert_true("$(ROOT)/scripts/check_watchos_contracts.py" in makefile, "Makefile must use the rooted contract path")
-    assert_true("WORKFLOW_CONTRACT_SCRIPT" in makefile, "Makefile must define the workflow mutation checker")
-    assert_true('find "$(ROOT)"' in makefile, "Makefile cleanup must stay inside the repository")
-    assert_true(
-        '$(MAKE) -f "$(abspath $(lastword $(MAKEFILE_LIST)))" clean' in makefile,
-        "Makefile final cleanup must remain root-independent",
-    )
+    for contract in (
+        ".DEFAULT_GOAL := check",
+        ".SECONDEXPANSION:",
+        "PYTHON ?= python3",
+        "override PYTHON := $(value PYTHON)",
+        "XCODEBUILD ?= /usr/bin/xcodebuild",
+        "override XCODEBUILD := $(value XCODEBUILD)",
+        "override SHELL := /bin/sh",
+        "override .SHELLFLAGS := -c",
+        "override MAKEFILES :=",
+        "ifneq ($(origin MAKEFILE_LIST),file)",
+        "export ROOT",
+        "root-test::",
+        "\t/bin/sh '$(REPOSITORY_ROOT_LITERAL)/scripts/test-makefile-root.sh'",
+    ):
+        assert_true(contract in makefile_lines, "Makefile authority contract is missing {0!r}".format(contract))
+    assert_true("MAKEFLAGS must not be overridden" in makefile, "Makefile must reject caller MAKEFLAGS")
+    assert_true("MAKEFILES must be empty" in makefile, "Makefile must reject startup files")
+    assert_true("MAKEFILE_LIST must not be overridden" in makefile, "Makefile must reject Makefile-list replacement")
+    assert_true("PYTHON must be a literal executable path" in makefile, "Makefile must reject Python Make syntax")
+    assert_true("XCODEBUILD must be a literal executable path" in makefile, "Makefile must reject Xcode Make syntax")
+    assert_true("'$(REPOSITORY_ROOT_LITERAL)/HeartyMonitor.xcodeproj'" in makefile, "Makefile must use the rooted project path")
+    assert_true("'$(REPOSITORY_ROOT_LITERAL)/scripts/check_watchos_contracts.py'" in makefile, "Makefile must use the rooted contract path")
+    assert_true("test_workflow_contract.py" in makefile, "Makefile must retain the workflow mutation checker")
+    assert_true("/usr/bin/find '$(REPOSITORY_ROOT_LITERAL)'" in makefile, "Makefile cleanup must stay inside the repository")
+    assert_true("verify:: root-test lint test contract-test build" in makefile_lines, "full verification must run authority tests")
+
+    authority_test = (ROOT / "scripts" / "test-makefile-root.sh").read_text()
+    for contract in (
+        "40 target/authority cases",
+        "literal hostile Python path",
+        "6 raw Make-syntax controls",
+        "2 MAKEFILE_LIST rejections",
+        "2 startup-boundary cases",
+        "8 later recipe-replacement rejections",
+        "PATH-Xcode rejection",
+        "cleanup containment",
+        "10 mode rejections",
+    ):
+        assert_true(contract in authority_test, "Make authority harness must include {0!r}".format(contract))
 
     for relative_path in ["README.md", "VISION.md", "SECURITY.md", "CHANGES.md"]:
         doc = (ROOT / relative_path).read_text()

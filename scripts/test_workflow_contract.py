@@ -31,8 +31,8 @@ mutations = {
     "reduced matrix": mutate("reduced matrix", '["3.10", "3.12", "3.14"]', '["3.12"]'),
     "continued failure": mutate("continued failure", "    strategy:", "    continue-on-error: true\n    strategy:"),
     "wrong Python selector": mutate("wrong Python selector", "python-version: ${{ matrix.python-version }}", 'python-version: "3.12"'),
-    "hosted Xcode": mutate("hosted Xcode", "run: make check", "run: xcodebuild build && make check"),
-    "weakened gate": mutate("weakened gate", "run: make check", "run: make test"),
+    "hosted Xcode": mutate("hosted Xcode", "run: /usr/bin/make check", "run: xcodebuild build && /usr/bin/make check"),
+    "weakened gate": mutate("weakened gate", "run: /usr/bin/make check", "run: /usr/bin/make test"),
 }
 for description, workflow in mutations.items(): assert_invalid(description, workflow)
 print(f"workflow contract tests passed ({len(mutations)} mutations rejected).")

@@ -51,6 +51,13 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 
 - `make verify` runs static WatchKit contract checks and attempts an Xcode build when `xcodebuild` is available.
 - `make check` runs `make verify` with bytecode cleanup before and after.
+- `make root-test` exercises every public target across hostile external paths,
+  root and shell overrides, startup files, Makefile-list replacement, later
+  recipe definitions, unsafe execution modes, and literal Python/Xcode paths.
+- Repository verification derives its root and shell from the reviewed
+  `Makefile`, accepts literal `PYTHON` and `XCODEBUILD` paths, and rejects
+  injected startup files and non-executing or error-ignoring Make modes.
+  Hosted checks invoke `/usr/bin/make` explicitly.
 - `python3 scripts/check_watchos_contracts.py` runs the HealthKit privacy,
   entitlement, plan, query-lifecycle, authorization UI-thread, workout
   authorization Start-button state, session-start, workout delegate UI-thread,
@@ -69,6 +76,8 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   interface is inactive and restored during the next activation.
 - Completed maintenance plans live under `docs/plans` and are checked by
   `make check`.
+- See `docs/plans/2026-06-21-make-authority-isolation.md` for the consolidated
+  Make, Python, Xcode, recipe-replacement, and cleanup-containment boundary.
 - GitHub Actions runs the same static contracts on Python 3.10, 3.12, and 3.14
   on Ubuntu 24.04 with read-only permissions, credential-free checkout,
   immutable action pins, and cancellation for superseded runs. Dependency-free
