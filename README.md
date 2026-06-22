@@ -32,7 +32,22 @@ Additional scan context:
 ### Prerequisites
 
 - Git
-- macOS with Xcode for building Apple platform projects
+- Python 3 and Make for the portable repository checks
+
+The checked-in project records Xcode 7.2-era metadata and uses Swift 2-era
+source, with iOS 9.2 and watchOS 2.1 deployment targets. Native work therefore
+requires a macOS environment capable of running the historical Xcode 7.2
+toolchain and its matching SDKs, simulator runtimes, signing support, and (for
+physical verification) a compatible paired iPhone and Apple Watch. That
+historical environment has not been rerun as part of current maintenance, so
+these prerequisites describe the project era rather than a verified supported
+configuration.
+
+The project does not currently compile with modern Xcode. Xcode 26.0.1 rejects
+the project before normal source compilation because no supported
+`SWIFT_VERSION` is configured; forcing Swift 5 exposes additional obsolete
+WatchKit and HealthKit APIs and delegate signatures. Modernization is separate
+work and is not part of the portable verification described below.
 
 ### Setup
 
@@ -41,16 +56,50 @@ git clone https://github.com/garethpaul/watchos-heart-rate-monitor.git
 cd watchos-heart-rate-monitor
 ```
 
-The setup commands above are derived from repository files. Legacy mobile, Python, or JavaScript samples may require older SDKs or package versions than a modern workstation uses by default.
+The setup commands above are derived from repository files.
 
 ## Running or Using the Project
 
-- Open `HeartyMonitor.xcodeproj` in Xcode, choose the app or sample scheme, and run it on the matching simulator/device.
+To inspect the native project:
+
+```bash
+open HeartyMonitor.xcodeproj
+```
+
+In a matching historical toolchain, the repository's unsigned build command is:
+
+```bash
+/usr/bin/xcodebuild -project HeartyMonitor.xcodeproj -scheme HeartyMonitor \
+  -configuration Debug CODE_SIGNING_ALLOWED=NO build
+```
+
+That command is documented for reproducibility; a successful Xcode 7.2 build
+is not claimed by current maintenance. It fails with the available modern
+Xcode toolchain for the compatibility reasons above. Runtime behavior still
+requires an era-compatible simulator or device, and physical HealthKit
+behavior requires the separate hardware matrix in `DEVICE_VERIFICATION.md`.
 
 ## Testing and Verification
 
-- `make verify` runs static WatchKit contract checks and attempts an Xcode build when `xcodebuild` is available.
-- `make check` runs `make verify` with bytecode cleanup before and after.
+- `make lint`, `make test`, `make contract-test`, and `make root-test` are the
+  portable local checks. `make test` runs static source-contract checks; it
+  does not invoke XCTest or validate native runtime behavior.
+- To run the same complete portable boundary from any working directory while
+  deliberately skipping unavailable native compilation, use:
+
+  ```bash
+  XCODEBUILD=/definitely/not-xcodebuild make -f /absolute/path/to/watchos-heart-rate-monitor/Makefile check
+  ```
+
+- GitHub Actions runs `/usr/bin/make check` on Ubuntu, where `xcodebuild` is not
+  installed. Hosted success therefore validates the static repository
+  contracts, workflow policy, mutation checks, Make authority boundary, and
+  cleanup behavior; it does not validate compilation, XCTest, simulator use,
+  Apple Watch behavior, or HealthKit behavior.
+- `make verify` runs the portable checks and also attempts the unsigned Xcode
+  build when the configured `XCODEBUILD` path is executable. `make check` adds
+  bytecode cleanup before and after `make verify`. On a modern macOS/Xcode
+  workstation, the native build is currently expected to fail.
 - `make root-test` exercises every public target across hostile external paths,
   root and shell overrides, startup files, Makefile-list replacement, later
   recipe definitions, unsafe execution modes, and literal Python/Xcode paths.
@@ -78,17 +127,24 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
   `make check`.
 - See `docs/plans/2026-06-21-make-authority-isolation.md` for the consolidated
   Make, Python, Xcode, recipe-replacement, and cleanup-containment boundary.
-- GitHub Actions runs the same static contracts on Python 3.10, 3.12, and 3.14
+- GitHub Actions runs the static contracts on Python 3.10, 3.12, and 3.14
   on Ubuntu 24.04 with read-only permissions, credential-free checkout,
   immutable action pins, and cancellation for superseded runs. Dependency-free
   mutations reject contradictory credential settings and policy regressions.
-- Xcode's test action or `xcodebuild test` can be used with the appropriate scheme and destination on a macOS/Xcode workstation.
+- `HeartyMonitorTests` and `HeartyMonitorUITests` are generated XCTest
+  templates. Their example and performance methods contain no assertions, and
+  launching the app in UI-test setup is not meaningful behavioral coverage.
+  Current maintenance therefore does not claim native test coverage from
+  those targets.
 - `DEVICE_VERIFICATION.md` defines the required physical Apple Watch and
   HealthKit authorization, workout, live-sample, stop, interruption, privacy,
   and redacted evidence checks. Its execution status remains explicit until a
   reviewer performs the matrix on hardware.
 
-When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
+When the historical SDK or runtime is unavailable, use the portable commands
+and source review without treating them as evidence of native behavior. Any
+future native claim must identify the exact working toolchain and complete the
+appropriate simulator or physical-device verification separately.
 
 ## Configuration and Secrets
 
