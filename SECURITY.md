@@ -39,9 +39,12 @@ Helpful reports include:
 If this project requests device permissions such as location, camera, microphone, contacts, Bluetooth, health data, or local storage access, reports should describe the permission involved and whether sensitive data can be accessed, persisted, or transmitted unexpectedly. Please avoid testing against real third-party user data or accounts you do not control.
 
 HealthKit workout controls should remain disabled while health data is
-unavailable, authorization is denied, or authorization is still pending. Reports
-that show a workout can be started without successful HealthKit authorization
-should include the device or simulator state used to reproduce it.
+unavailable, authorization is still pending, or authorization request processing
+fails. A successful authorization callback means the request was processed; it
+does not reveal whether the user granted read access. Do not infer read denial
+from this callback. Reports that show a workout can be started before request
+processing finishes should include the device or simulator state used to
+reproduce it.
 Queued heart-rate UI work must recheck workout state on the main queue so a
 sample cannot reappear after session cleanup.
 Anchored-query callbacks must enter the main queue before reading query
@@ -49,8 +52,8 @@ identity or advancing the shared anchor. Status and source values must be kept
 outside WatchKit interface objects because inactive interface changes are
 ignored by the system.
 Queued authorization UI work must match the current WatchKit activation
-generation so a callback from an earlier activation cannot enable or deny
-controls after the interface reactivates.
+generation so a callback from an earlier activation cannot enable controls or
+report a processing failure after the interface reactivates.
 Stopping a workout must stop and clear its retained heart-rate query before
 requesting asynchronous workout-session termination so an older query cannot
 remain executing after a restart.

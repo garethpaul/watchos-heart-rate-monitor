@@ -54,7 +54,7 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
         }
         
         guard let quantityType = HKQuantityType.quantityTypeForIdentifier(HKQuantityTypeIdentifierHeartRate) else {
-            displayNotAllowed()
+            displayAuthorizationFailed()
             return
         }
         
@@ -67,7 +67,7 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
                 if success == true {
                     self.startStopButton.setEnabled(true)
                 } else if success == false {
-                    self.displayNotAllowed()
+                    self.displayAuthorizationFailed()
                 }
             }
         }
@@ -80,8 +80,8 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
         super.didDeactivate()
     }
     
-    func displayNotAllowed() {
-        updateStatusText("not allowed")
+    func displayAuthorizationFailed() {
+        updateStatusText("authorization failed")
         startStopButton.setEnabled(false)
     }
     

@@ -18,7 +18,8 @@ Priority:
 - Keep HealthKit authorization visible
 - Keep HealthKit authorization UI updates on the main queue
 - Reject authorization callbacks from earlier WatchKit activation cycles
-- Keep Start disabled until HealthKit authorization allows workouts
+- Keep Start disabled until the HealthKit authorization request finishes successfully
+- Do not infer HealthKit read authorization from authorization callback success
 - Keep WatchKit workout session delegate UI cleanup on the main queue
 - Avoid force-unwrapping workout session state while starting workouts
 - Reset visible workout controls when heart-rate query startup fails

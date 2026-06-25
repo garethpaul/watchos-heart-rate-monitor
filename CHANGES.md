@@ -1,5 +1,27 @@
 # Changes
 
+## 2026-06-25 08:51 PDT
+
+- **Priority:** P1 HealthKit privacy and authorization correctness.
+- **Summary:** Corrected the sample's interpretation of HealthKit authorization
+  results so it no longer claims that read-access denial is observable.
+- **Work:** Renamed denial feedback to request-processing failure feedback in
+  both mirrored controllers, strengthened portable contracts, updated current
+  security and hardware-verification guidance, and added a completed plan.
+- **Threads:** No open issue or pull request covered this focused correction.
+- **Files:** Updated both `InterfaceController.swift` copies, contributor and
+  project guidance, device verification, static contracts, and the new plan.
+- **Validation:** The test-first contract failed against `not allowed`; focused
+  contracts, a hostile semantic mutation, root and external-directory
+  `make check`, mirror comparison, and `git diff --check` then passed. Native
+  build execution was skipped because `xcodebuild` is unavailable.
+- **Findings:** Apple's API contract says callback success reports request
+  processing, not whether read permission was granted.
+- **Blockers:** Native legacy WatchKit behavior still requires compatible
+  macOS, Xcode, signing, and physical-device verification.
+- **Next action:** Review the exact branch head and merge only after hosted
+  checks pass.
+
 ## 2026-06-21
 
 - Isolated Make verification authority from caller-controlled roots, shells,
