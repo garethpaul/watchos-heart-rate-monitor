@@ -29,11 +29,13 @@ install or relaunch.
    authorization prompt explains heart-rate read access and the Start control is
    disabled while authorization is pending.
 2. **Denied access:** On a clean permission state, deny heart-rate read access.
-   Confirm the label shows `not allowed`, Start stays disabled, and no workout or
-   heart-rate update begins.
+   Confirm Start becomes enabled after the authorization sheet is processed;
+   callback success does not reveal the read-access decision. Start a workout
+   and confirm no unauthorized heart-rate sample is displayed. Do not treat an
+   empty result as proof of denial because no samples may also be available.
 3. **Approved access:** Grant heart-rate read access in system settings, then
-   relaunch the app. Confirm Start becomes enabled without exposing prior health
-   samples.
+   relaunch the app. Confirm Start becomes enabled after request processing and
+   a workout can display a live sample without exposing prior health samples.
 4. **Workout start:** Tap Start. Confirm the button title changes from `Start` to
    `Stop`, a workout begins, the heart-rate label updates, the sample source label
    identifies the active source, and the heart image animates.

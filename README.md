@@ -108,13 +108,17 @@ behavior requires the separate hardware matrix in `DEVICE_VERIFICATION.md`.
   injected startup files and non-executing or error-ignoring Make modes.
   Hosted checks invoke `/usr/bin/make` explicitly.
 - `python3 scripts/check_watchos_contracts.py` runs the HealthKit privacy,
-  entitlement, plan, query-lifecycle, authorization UI-thread, workout
-  authorization Start-button state, session-start, workout delegate UI-thread,
+  entitlement, plan, query-lifecycle, authorization request-error UI-thread,
+  authorization request Start-button state, session-start, workout delegate UI-thread,
   query-start failure, inactive and queued stale heart-rate callbacks,
   activation-generation authorization guards, immediate query-stop,
   main-queue query ownership, current-query error cleanup, generation-bound
   heart animation, heart-rate value-bound, and workout
   session-failure/session-end contracts.
+- Start remains disabled while the HealthKit authorization request is pending,
+  becomes enabled after the request is processed successfully, and remains
+  disabled with `authorization failed` feedback when request processing fails.
+  HealthKit does not reveal read-access grant or denial through this callback.
 - Heart-rate query errors stop and clear the current query and workout, restore
   the Start state, and use a generic failure message without exposing details.
 - Delayed heart-icon callbacks recheck interface, workout, and animation
@@ -173,9 +177,11 @@ appropriate simulator or physical-device verification separately.
 - See `docs/plans/2026-06-09-watchkit-session-end-ui.md` for mirrored normal
   ended-session UI cleanup.
 - See `docs/plans/2026-06-09-watchkit-authorization-main-thread.md` for
-  mirrored HealthKit authorization denial UI dispatch.
+  the historical mirrored HealthKit authorization callback UI dispatch change.
 - See `docs/plans/2026-06-09-watchkit-authorization-start-button.md` for
-  mirrored HealthKit authorization Start-button state.
+  the historical mirrored HealthKit authorization Start-button change.
+- See `docs/plans/2026-06-25-healthkit-authorization-result-semantics.md` for
+  the current request-processing semantics and read-authorization boundary.
 - See `docs/plans/2026-06-09-watchkit-query-start-failure-ui.md` for mirrored
   cleanup when heart-rate streaming query creation fails.
 - See `docs/plans/2026-06-09-watchkit-heart-rate-value-bounds.md` for mirrored

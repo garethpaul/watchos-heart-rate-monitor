@@ -72,6 +72,9 @@ QUERY_OWNERSHIP_PLAN_PATH = (
 MAKE_AUTHORITY_PLAN_PATH = (
     ROOT / "docs" / "plans" / "2026-06-21-make-authority-isolation.md"
 )
+AUTHORIZATION_RESULT_SEMANTICS_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-25-healthkit-authorization-result-semantics.md"
+)
 WORKFLOW_PATH = ROOT / ".github" / "workflows" / "check.yml"
 INTERFACE_CONTROLLERS = [
     Path("HeartyMonitor WatchKit Extension/InterfaceController.swift"),
@@ -163,6 +166,10 @@ def test_completed_plans_are_in_docs_plans():
     assert_completed_plan(HEART_ANIMATION_PLAN_PATH, "heart animation generation")
     assert_completed_plan(QUERY_OWNERSHIP_PLAN_PATH, "main-queue query ownership")
     assert_completed_plan(MAKE_AUTHORITY_PLAN_PATH, "Make authority isolation")
+    assert_completed_plan(
+        AUTHORIZATION_RESULT_SEMANTICS_PLAN_PATH,
+        "HealthKit authorization result semantics",
+    )
     checker_main = Path(__file__).read_text().rsplit("def main():", 1)[1]
     assert_true(
         "test_device_verification_checklist_is_auditable," in checker_main,
@@ -218,6 +225,9 @@ def test_device_verification_checklist_is_auditable():
         "physical Apple Watch",
         "Do not record raw heart-rate values",
         "deny heart-rate read access",
+        "callback success does not reveal the read-access decision",
+        "no unauthorized heart-rate sample is displayed",
+        "Do not treat an empty result as proof of denial",
         "Grant heart-rate read access",
         "button title changes from `Start` to",
         "heart-rate label updates",
@@ -327,28 +337,36 @@ def test_heart_rate_streaming_query_is_retained_and_stopped():
         )
 
 
-def test_authorization_denial_updates_ui_on_main_queue():
+def test_authorization_request_errors_update_ui_on_main_queue():
     for relative_path in INTERFACE_CONTROLLERS:
         source = (ROOT / relative_path).read_text()
         authorization_block = source.split(
             "healthStore.requestAuthorizationToShareTypes", 1
-        )[1].split("func displayNotAllowed", 1)[0]
+        )[1].split("func displayAuthorizationFailed", 1)[0]
         assert_true(
             "if success == false" in authorization_block,
-            "{0} must handle denied HealthKit authorization".format(relative_path),
+            "{0} must handle HealthKit authorization request errors".format(relative_path),
         )
         assert_true(
             "dispatch_async(dispatch_get_main_queue())" in authorization_block,
-            "{0} must dispatch denied-authorization UI updates to the main queue".format(relative_path),
+            "{0} must dispatch authorization-error UI updates to the main queue".format(relative_path),
         )
         assert_true(
-            "self.displayNotAllowed()" in authorization_block,
-            "{0} must still show denied-authorization feedback".format(relative_path),
+            "self.displayAuthorizationFailed()" in authorization_block,
+            "{0} must show authorization request failure feedback".format(relative_path),
         )
         assert_true(
             authorization_block.index("dispatch_async(dispatch_get_main_queue())")
-            < authorization_block.index("self.displayNotAllowed()"),
-            "{0} must dispatch before updating denied-authorization UI".format(relative_path),
+            < authorization_block.index("self.displayAuthorizationFailed()"),
+            "{0} must dispatch before updating authorization-error UI".format(relative_path),
+        )
+        assert_true(
+            'updateStatusText("authorization failed")' in source,
+            "{0} must distinguish request processing errors from unobservable read denial".format(relative_path),
+        )
+        assert_true(
+            '"not allowed"' not in source,
+            "{0} must not claim HealthKit read denial is observable".format(relative_path),
         )
 
 
@@ -356,7 +374,7 @@ def test_healthkit_authorization_controls_start_button_state():
     for relative_path in INTERFACE_CONTROLLERS:
         source = (ROOT / relative_path).read_text()
         will_activate = source.split("override func willActivate()", 1)[1].split(
-            "func displayNotAllowed", 1
+            "func displayAuthorizationFailed", 1
         )[0]
         unavailable_block = will_activate.split(
             "guard HKHealthStore.isHealthDataAvailable() == true else", 1
@@ -366,8 +384,8 @@ def test_healthkit_authorization_controls_start_button_state():
         )[1]
         authorization_block = source.split(
             "healthStore.requestAuthorizationToShareTypes", 1
-        )[1].split("func displayNotAllowed", 1)[0]
-        display_not_allowed = source.split("func displayNotAllowed()", 1)[1].split(
+        )[1].split("func displayAuthorizationFailed", 1)[0]
+        display_authorization_failed = source.split("func displayAuthorizationFailed()", 1)[1].split(
             "func workoutSession", 1
         )[0]
 
@@ -376,8 +394,8 @@ def test_healthkit_authorization_controls_start_button_state():
             "{0} must disable Start when HealthKit data is unavailable".format(relative_path),
         )
         assert_true(
-            "startStopButton.setEnabled(false)" in display_not_allowed,
-            "{0} denied HealthKit feedback must disable Start".format(relative_path),
+            "startStopButton.setEnabled(false)" in display_authorization_failed,
+            "{0} authorization error feedback must disable Start".format(relative_path),
         )
         assert_true(
             authorization_setup.index("startStopButton.setEnabled(false)")
@@ -386,11 +404,11 @@ def test_healthkit_authorization_controls_start_button_state():
         )
         assert_true(
             "if success == true" in authorization_block,
-            "{0} must explicitly handle successful HealthKit authorization".format(relative_path),
+            "{0} must explicitly handle successful HealthKit authorization request processing".format(relative_path),
         )
         assert_true(
             "self.startStopButton.setEnabled(true)" in authorization_block,
-            "{0} must re-enable Start after successful HealthKit authorization".format(relative_path),
+            "{0} must re-enable Start after successful HealthKit authorization request processing".format(relative_path),
         )
         assert_true(
             authorization_block.index("dispatch_async(dispatch_get_main_queue())")
@@ -411,7 +429,7 @@ def test_authorization_callbacks_ignore_inactive_interfaces():
             "healthStore.requestAuthorizationToShareTypes", 1
         )[1]
         did_deactivate = source.split("override func didDeactivate()", 1)[1].split(
-            "func displayNotAllowed", 1
+            "func displayAuthorizationFailed", 1
         )[0]
 
         assert_true(
@@ -454,7 +472,7 @@ def test_authorization_callbacks_match_current_activation_generation():
             "healthStore.requestAuthorizationToShareTypes", 1
         )[1]
         did_deactivate = source.split("override func didDeactivate()", 1)[1].split(
-            "func displayNotAllowed", 1
+            "func displayAuthorizationFailed", 1
         )[0]
 
         assert_true(
@@ -886,7 +904,7 @@ def main():
         test_device_verification_checklist_is_auditable,
         test_ci_workflow_runs_static_baseline,
         test_heart_rate_streaming_query_is_retained_and_stopped,
-        test_authorization_denial_updates_ui_on_main_queue,
+        test_authorization_request_errors_update_ui_on_main_queue,
         test_healthkit_authorization_controls_start_button_state,
         test_authorization_callbacks_ignore_inactive_interfaces,
         test_authorization_callbacks_match_current_activation_generation,

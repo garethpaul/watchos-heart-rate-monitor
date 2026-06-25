@@ -61,7 +61,7 @@ def validation_errors(source):
             errors.append("delayed heart animation must recheck interface, workout, and generation state")
 
     teardown_methods = (
-        ("override func didDeactivate()", "func displayNotAllowed()", ("interfaceActive = false", "authorizationGeneration += 1", "resetHeartAnimation()")),
+        ("override func didDeactivate()", "func displayAuthorizationFailed()", ("interfaceActive = false", "authorizationGeneration += 1", "resetHeartAnimation()")),
         ("func workoutSession(workoutSession: HKWorkoutSession, didFailWithError", "func workoutDidStart", ("self.workoutActive = false", "self.resetHeartAnimation()")),
         ("func workoutDidStart", "func workoutDidEnd", ("workoutActive = false", "resetHeartAnimation()")),
         ("func workoutDidEnd", "// MARK: - Actions", ("workoutActive = false", "resetHeartAnimation()")),
