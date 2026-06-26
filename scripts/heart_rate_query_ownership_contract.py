@@ -25,6 +25,15 @@ def validation_errors(source):
     if query_factory is None:
         errors.append("query factory and result owner must remain separate")
     else:
+        if not ordered(
+            query_factory,
+            (
+                "let predicate = HKQuery.predicateForSamplesWithStartDate(",
+                "options: HKQueryOptions.StrictStartDate)",
+                "predicate: predicate",
+            ),
+        ):
+            errors.append("heart-rate queries must admit only samples from the current workout")
         callback_dispatches = query_factory.count(
             "dispatch_async(dispatch_get_main_queue())"
         )
@@ -155,6 +164,8 @@ def validation_errors(source):
     if start_failure is None or not ordered(
         start_failure,
         (
+            "anchor = HKQueryAnchor(fromValue: Int(HKAnchoredObjectQueryNoAnchor))",
+            "createHeartRateStreamingQuery(date)",
             "if let workout = workoutSession",
             "workoutSession = nil",
             "healthStore.endWorkoutSession(workout)",
@@ -162,7 +173,7 @@ def validation_errors(source):
             "updateStatusText(\"cannot start\")",
         ),
     ):
-        errors.append("query-start failure must clear session ownership and stale source")
+        errors.append("workout query startup must reset admission state and clear failures")
 
     if failure is None or not ordered(
         failure,

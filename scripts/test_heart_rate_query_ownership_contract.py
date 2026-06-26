@@ -27,6 +27,20 @@ def main():
             "            self.handleHeartRateQueryResult(query, samples: samples, newAnchor: newAnchor, error: error)\n",
             1,
         ),
+        "reuse prior workout anchor": source.replace(
+            "        anchor = HKQueryAnchor(fromValue: Int(HKAnchoredObjectQueryNoAnchor))\n",
+            "",
+            1,
+        ),
+        "remove workout start predicate": source.replace(
+            "        let predicate = HKQuery.predicateForSamplesWithStartDate(workoutStartDate, endDate: nil, options: HKQueryOptions.StrictStartDate)\n",
+            "",
+            1,
+        ).replace(
+            "type: quantityType, predicate: predicate, anchor: anchor",
+            "type: quantityType, predicate: nil, anchor: anchor",
+            1,
+        ),
         "remove current query guard": source.replace(
             "        guard heartRateQuery === query else {return}\n",
             "",

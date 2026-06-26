@@ -61,6 +61,8 @@
 - See `docs/plans/2026-06-08-healthkit-privacy-strings.md` for the current HealthKit privacy and query baseline.
 - Delayed heart animations must match the current interface, workout, and
   animation generation before changing WatchKit UI.
+- Each workout must reset its anchored-query cursor and admit only samples whose
+  start date belongs to that workout.
 
 ## Agent workflow
 
