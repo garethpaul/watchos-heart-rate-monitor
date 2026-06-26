@@ -125,8 +125,10 @@ behavior requires the separate hardware matrix in `DEVICE_VERIFICATION.md`.
   generation state; teardown paths invalidate queued work and restore the
   default icon size synchronously.
 - Anchored-query callbacks enter the main queue before checking query identity
-  or advancing the shared anchor. Status and source text are retained while the
-  interface is inactive and restored during the next activation.
+  or advancing the shared anchor. Each workout resets that anchor and applies a
+  strict workout-start predicate so the initial callback cannot display older
+  heart-rate samples. Status and source text are retained while the interface
+  is inactive and restored during the next activation.
 - Completed maintenance plans live under `docs/plans` and are checked by
   `make check`.
 - See `docs/plans/2026-06-21-make-authority-isolation.md` for the consolidated
@@ -210,6 +212,8 @@ appropriate simulator or physical-device verification separately.
 - See `docs/plans/2026-06-19-watchos-main-queue-query-ownership.md` for
   main-queue anchor ownership, inactive interface restoration, and explicit
   workout-stop ownership.
+- See `docs/plans/2026-06-26-workout-sample-admission.md` for per-workout anchor
+  reset and strict start-date sample admission.
 
 ## Contributing
 

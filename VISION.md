@@ -34,6 +34,7 @@ Priority:
 - Reject stale delayed heart animation callbacks after newer beats or teardown
 - Recheck workout state before queued heart-rate UI updates
 - Display the newest sample when HealthKit delivers heart-rate batches
+- Admit only samples that start during the current workout
 - Ignore zero, nonfinite, and out-of-range heart-rate values before display conversion
 - Avoid storing or uploading heart-rate samples by default
 - Keep GitHub Actions running the static `make check` baseline

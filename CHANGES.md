@@ -1,5 +1,26 @@
 # Changes
 
+## 2026-06-26 03:53 PDT
+
+- **Priority:** P1 HealthKit sample privacy and workout correctness.
+- **Summary:** Scoped each heart-rate query to the workout that created it so
+  an initial callback cannot display samples saved before the current workout.
+- **Work:** Reset the anchored-query cursor when a workout reaches Running,
+  added a strict workout-start predicate in both mirrored controllers, and
+  strengthened the portable ownership and mutation contracts.
+- **Threads:** No open issue or pull request covered this focused correction.
+- **Files:** Updated both `InterfaceController.swift` copies, query-ownership
+  contracts, project guidance, this cycle record, and a completed design plan.
+- **Validation:** The test-first ownership contract failed on the reused anchor
+  and missing predicate. Focused mutations, root/external `make check`, mirror
+  comparison, and hosted checks are required before merge.
+- **Findings:** A no-anchor anchored query returns all matching history, while
+  the prior nil predicate admitted heart-rate samples from before the workout.
+- **Blockers:** Native legacy WatchKit behavior still requires compatible
+  macOS, Xcode, signing, and physical-device verification.
+- **Next action:** Review the exact branch head and merge only after hosted
+  checks pass.
+
 ## 2026-06-25 08:51 PDT
 
 - **Priority:** P1 HealthKit privacy and authorization correctness.

@@ -118,6 +118,7 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
     }
     
     func workoutDidStart(date : NSDate) {
+        anchor = HKQueryAnchor(fromValue: Int(HKAnchoredObjectQueryNoAnchor))
         if let query = createHeartRateStreamingQuery(date) {
             heartRateQuery = query
             healthStore.executeQuery(query)
@@ -183,12 +184,10 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
     }
     
     func createHeartRateStreamingQuery(workoutStartDate: NSDate) -> HKQuery? {
-        // adding predicate will not work
-        // let predicate = HKQuery.predicateForSamplesWithStartDate(workoutStartDate, endDate: nil, options: HKQueryOptions.None)
-        
         guard let quantityType = HKObjectType.quantityTypeForIdentifier(HKQuantityTypeIdentifierHeartRate) else { return nil }
+        let predicate = HKQuery.predicateForSamplesWithStartDate(workoutStartDate, endDate: nil, options: HKQueryOptions.StrictStartDate)
         
-        let heartRateQuery = HKAnchoredObjectQuery(type: quantityType, predicate: nil, anchor: anchor, limit: Int(HKObjectQueryNoLimit)) { (query, sampleObjects, deletedObjects, newAnchor, error) -> Void in
+        let heartRateQuery = HKAnchoredObjectQuery(type: quantityType, predicate: predicate, anchor: anchor, limit: Int(HKObjectQueryNoLimit)) { (query, sampleObjects, deletedObjects, newAnchor, error) -> Void in
             dispatch_async(dispatch_get_main_queue()) {
                 self.handleHeartRateQueryResult(query, samples: sampleObjects, newAnchor: newAnchor, error: error)
             }

@@ -75,6 +75,9 @@ MAKE_AUTHORITY_PLAN_PATH = (
 AUTHORIZATION_RESULT_SEMANTICS_PLAN_PATH = (
     ROOT / "docs" / "plans" / "2026-06-25-healthkit-authorization-result-semantics.md"
 )
+WORKOUT_SAMPLE_ADMISSION_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-26-workout-sample-admission.md"
+)
 WORKFLOW_PATH = ROOT / ".github" / "workflows" / "check.yml"
 INTERFACE_CONTROLLERS = [
     Path("HeartyMonitor WatchKit Extension/InterfaceController.swift"),
@@ -170,6 +173,7 @@ def test_completed_plans_are_in_docs_plans():
         AUTHORIZATION_RESULT_SEMANTICS_PLAN_PATH,
         "HealthKit authorization result semantics",
     )
+    assert_completed_plan(WORKOUT_SAMPLE_ADMISSION_PLAN_PATH, "workout sample admission")
     checker_main = Path(__file__).read_text().rsplit("def main():", 1)[1]
     assert_true(
         "test_device_verification_checklist_is_auditable," in checker_main,
