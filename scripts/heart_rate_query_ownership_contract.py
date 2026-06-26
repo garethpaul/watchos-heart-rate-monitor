@@ -88,7 +88,10 @@ def validation_errors(source):
         (
             "guard self.workoutActive else{return}",
             "guard self.heartRateQuery === query else{return}",
-            "guard let sample = heartRateSamples.last else{return}",
+            "guard var sample = heartRateSamples.first else{return}",
+            "for candidate in heartRateSamples.dropFirst()",
+            "candidate.startDate.compare(sample.startDate) == .OrderedDescending",
+            "sample = candidate",
             "guard value > 0 && value <= 300 else{return}",
             "self.updateStatusText(String(UInt16(value)))",
             "self.updateDeviceName(name)",

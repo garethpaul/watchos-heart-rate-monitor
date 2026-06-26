@@ -33,7 +33,7 @@ Priority:
 - Fail closed when the current heart-rate query reports an error
 - Reject stale delayed heart animation callbacks after newer beats or teardown
 - Recheck workout state before queued heart-rate UI updates
-- Display the newest sample when HealthKit delivers heart-rate batches
+- Heart-rate callback batches select the sample with the greatest start date instead of relying on callback array order.
 - Admit only samples that start during the current workout
 - Ignore zero, nonfinite, and out-of-range heart-rate values before display conversion
 - Avoid storing or uploading heart-rate samples by default
