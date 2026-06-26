@@ -58,6 +58,8 @@
 - This looks like an Apple platform project or sample. Xcode, Swift, CocoaPods, and deployment target versions may need to match the original project era.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
+- See `docs/plans/2026-06-26-healthkit-setup-guide.md` for the source-backed
+  HealthKit target, entitlement, signing, and historical version setup boundary.
 - See `docs/plans/2026-06-08-healthkit-privacy-strings.md` for the current HealthKit privacy and query baseline.
 - Delayed heart animations must match the current interface, workout, and
   animation generation before changing WatchKit UI.

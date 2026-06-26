@@ -58,6 +58,26 @@ cd watchos-heart-rate-monitor
 
 The setup commands above are derived from repository files.
 
+### HealthKit Target Configuration
+
+The checked-in iPhone app and WatchKit extension both enable HealthKit through
+`HeartyMonitor/HeartyMonitor.entitlements` and
+`HeartyMonitor WatchKit Extension/HeartyMonitor WatchKit Extension.entitlements`.
+Each file sets `com.apple.developer.healthkit` to true. The WatchKit extension
+also declares `NSHealthShareUsageDescription` in
+`HeartyMonitor WatchKit Extension/Info.plist` for heart-rate read access.
+
+The project metadata records iOS 9.2 and watchOS 2.1 deployment targets. In a
+compatible Xcode environment, enable the HealthKit capability for both targets,
+select a development team, and use provisioning that includes HealthKit before
+installing on paired hardware. Repository entitlements describe the required
+capability but do not replace Apple signing or provisioning setup.
+
+Do not commit signing identities, provisioning profiles, team identifiers, or
+private entitlements. Keep machine- and account-specific signing configuration
+outside version control, and use `DEVICE_VERIFICATION.md` for the physical
+authorization and workout checklist.
+
 ## Running or Using the Project
 
 To inspect the native project:

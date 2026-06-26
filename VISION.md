@@ -46,7 +46,6 @@ Priority:
 
 Next priorities:
 
-- Add README setup notes for HealthKit entitlements and watchOS versions
 - Modernize HealthKit APIs in a dedicated pass
 
 Contribution rules:
