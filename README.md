@@ -217,6 +217,7 @@ appropriate simulator or physical-device verification separately.
   mirrored guard against UI updates queued before a workout ends.
 - See `docs/plans/2026-06-10-latest-heart-rate-sample.md` for mirrored
   latest-sample selection when HealthKit delivers callback batches.
+- Heart-rate callback batches select the sample with the greatest start date instead of relying on callback array order.
 - See `docs/plans/2026-06-12-authorization-lifecycle-guard.md` for the mirrored
   guard against stale authorization UI work after interface deactivation.
 - See `docs/plans/2026-06-13-authorization-callback-generation.md` for rejecting

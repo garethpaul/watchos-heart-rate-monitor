@@ -65,6 +65,7 @@
   animation generation before changing WatchKit UI.
 - Each workout must reset its anchored-query cursor and admit only samples whose
   start date belongs to that workout.
+- Heart-rate callback batches select the sample with the greatest start date instead of relying on callback array order.
 
 ## Agent workflow
 

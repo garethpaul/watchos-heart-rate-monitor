@@ -62,6 +62,7 @@ that explicit termination so late end or failure callbacks no longer own state.
 Heart-rate query errors fail closed without logging HealthKit details: the
 current query and workout are stopped and cleared before generic failure UI is
 shown.
+Heart-rate callback batches select the sample with the greatest start date instead of relying on callback array order.
 Delayed heart animation callbacks must match the active interface, workout,
 and animation generation before mutating WatchKit UI.
 

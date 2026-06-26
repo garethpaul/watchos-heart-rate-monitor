@@ -81,6 +81,9 @@ WORKOUT_SAMPLE_ADMISSION_PLAN_PATH = (
 HEALTHKIT_SETUP_PLAN_PATH = (
     ROOT / "docs" / "plans" / "2026-06-26-healthkit-setup-guide.md"
 )
+NEWEST_SAMPLE_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-26-newest-heart-rate-sample.md"
+)
 WORKFLOW_PATH = ROOT / ".github" / "workflows" / "check.yml"
 INTERFACE_CONTROLLERS = [
     Path("HeartyMonitor WatchKit Extension/InterfaceController.swift"),
@@ -195,6 +198,7 @@ def test_completed_plans_are_in_docs_plans():
     )
     assert_completed_plan(WORKOUT_SAMPLE_ADMISSION_PLAN_PATH, "workout sample admission")
     assert_completed_plan(HEALTHKIT_SETUP_PLAN_PATH, "HealthKit setup guide")
+    assert_completed_plan(NEWEST_SAMPLE_PLAN_PATH, "newest heart-rate sample selection")
     checker_main = Path(__file__).read_text().rsplit("def main():", 1)[1]
     assert_true(
         "test_device_verification_checklist_is_auditable," in checker_main,
@@ -610,7 +614,7 @@ def test_heart_rate_callbacks_match_current_query():
         assert_true(
             "dispatch_async(" not in update_method
             and update_method.index(queued_query_guard)
-            < update_method.index("guard let sample = heartRateSamples.last else{return}"),
+            < update_method.index("guard var sample = heartRateSamples.first else{return}"),
             "{0} main-queue UI work must match the retained query before reading samples".format(
                 relative_path
             ),
@@ -884,12 +888,22 @@ def test_heart_rate_batches_display_latest_sample():
         source = (ROOT / relative_path).read_text()
         method = source.split("func updateHeartRate", 1)[1].split("func updateStatusText", 1)[0]
         assert_true(
-            "guard let sample = heartRateSamples.last else{return}" in method,
-            "{0} must display the newest sample from each callback batch".format(relative_path),
+            "guard var sample = heartRateSamples.first else{return}" in method
+            and "for candidate in heartRateSamples.dropFirst()" in method
+            and "candidate.startDate.compare(sample.startDate) == .OrderedDescending" in method
+            and "sample = candidate" in method,
+            "{0} must select the greatest sample start date from each callback batch".format(relative_path),
         )
         assert_true(
-            "heartRateSamples.first" not in method,
-            "{0} must not discard newer samples by selecting the oldest batch value".format(relative_path),
+            "heartRateSamples.last" not in method,
+            "{0} must not rely on undocumented callback array ordering".format(relative_path),
+        )
+
+    guidance = "Heart-rate callback batches select the sample with the greatest start date instead of relying on callback array order."
+    for relative_path in ["AGENTS.md", "README.md", "SECURITY.md", "VISION.md", "CHANGES.md"]:
+        assert_true(
+            guidance in (ROOT / relative_path).read_text(),
+            "{0} must document chronological heart-rate batch selection".format(relative_path),
         )
 
 
@@ -916,7 +930,7 @@ def test_main_queue_heart_rate_updates_recheck_workout_state():
             < owner.index("guard heartRateQuery === query else {return}")
             < owner.index("anchor = newAnchor")
             and method.index("guard self.workoutActive else{return}")
-            < method.index("guard let sample = heartRateSamples.last else{return}"),
+            < method.index("guard var sample = heartRateSamples.first else{return}"),
             "{0} must validate state before anchor and sample processing on the main queue".format(relative_path),
         )
 

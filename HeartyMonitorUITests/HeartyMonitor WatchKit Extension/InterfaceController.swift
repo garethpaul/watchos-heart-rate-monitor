@@ -235,7 +235,12 @@ class InterfaceController: WKInterfaceController, HKWorkoutSessionDelegate {
         
         guard self.workoutActive else{return}
         guard self.heartRateQuery === query else{return}
-        guard let sample = heartRateSamples.last else{return}
+        guard var sample = heartRateSamples.first else{return}
+        for candidate in heartRateSamples.dropFirst() {
+            if candidate.startDate.compare(sample.startDate) == .OrderedDescending {
+                sample = candidate
+            }
+        }
         let value = sample.quantity.doubleValueForUnit(self.heartRateUnit)
         guard value > 0 && value <= 300 else{return}
         self.updateStatusText(String(UInt16(value)))

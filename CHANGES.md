@@ -1,5 +1,67 @@
 # Changes
 
+## 2026-06-26 12:36 PDT - P1 - Select heart-rate samples chronologically
+
+### Summary
+
+Stopped treating the final HealthKit callback-array position as the newest
+measurement. Heart-rate callback batches select the sample with the greatest start date instead of relying on callback array order.
+
+### Work completed
+
+- Replaced positional `.last` selection with one linear `startDate` maximum
+  scan in both mirrored WatchKit controllers.
+- Preserved current workout/query identity checks, heart-rate bounds, source
+  display, retained interface state, and animation behavior.
+- Added fail-closed query-ownership and top-level contracts for the chronological
+  selection shape.
+- Added design and implementation records with the Apple anchored-query
+  documentation boundary.
+
+### Threads
+
+- None. The correction was implemented directly after the public queue and
+  remote branches showed no unfinished work.
+
+### Files changed
+
+- `HeartyMonitor WatchKit Extension/InterfaceController.swift` — selects the
+  greatest sample start date.
+- `HeartyMonitorUITests/HeartyMonitor WatchKit Extension/InterfaceController.swift`
+  — keeps the UI-test mirror identical.
+- `scripts/check_watchos_contracts.py` and
+  `scripts/heart_rate_query_ownership_contract.py` — enforce selection and
+  lifecycle ordering.
+- Guidance and plan files — document behavior, evidence, and runtime boundary.
+
+### Validation
+
+- Red-first `python3 scripts/check_watchos_contracts.py` rejected positional
+  `.last` selection before production changes.
+- All seven Make aliases passed from the repository root and an external
+  directory; the portable suite passed 26 top-level contracts, 14 query-owner
+  mutations, 14 animation mutations, and 17 workflow mutations.
+- Four isolated hostile mutations for positional selection, reversed date
+  comparison, mirror drift, and guidance drift were rejected.
+- `xcodebuild` was not installed, so native compilation and paired-device
+  behavior remain an explicit runtime boundary.
+
+### Bugs / findings
+
+- P1 display correctness: HealthKit callback batches are not documented as
+  chronologically ordered, so `.last` could display an older measurement while
+  the query anchor advanced past the batch.
+
+### Blockers
+
+- Native HealthKit runtime behavior requires compatible Xcode and physical
+  Apple Watch verification; portable contracts validate the mirrored source.
+
+### Next action
+
+- Complete full validation, review the immutable PR head, and merge only after
+  every hosted check passes.
+
 ## 2026-06-26 04:01 PDT - P2 - Complete HealthKit target setup guidance
 
 ### Summary
