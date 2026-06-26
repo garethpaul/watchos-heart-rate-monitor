@@ -1,5 +1,53 @@
 # Changes
 
+## 2026-06-26 04:01 PDT - P2 - Complete HealthKit target setup guidance
+
+### Summary
+
+Closed the stale setup roadmap item by documenting the checked-in HealthKit
+entitlements, extension privacy key, historical deployment targets, and private
+signing boundary in README.
+
+### Work completed
+
+- Added exact app and WatchKit extension entitlement paths and the
+  `com.apple.developer.healthkit` capability contract.
+- Documented `NSHealthShareUsageDescription`, iOS 9.2/watchOS 2.1 metadata,
+  paired-device provisioning expectations, and prohibited signing artifacts.
+- Added a fail-closed documentation contract and completed plan.
+
+### Threads
+
+- None; the source-backed documentation reconciliation was completed directly.
+
+### Files changed
+
+- `README.md` — added HealthKit target configuration and signing guidance.
+- `scripts/check_watchos_contracts.py` — enforce exact setup evidence.
+- `VISION.md`, `AGENTS.md`, `docs/plans/2026-06-26-healthkit-setup-guide.md`
+  — close and index the completed roadmap work.
+
+### Validation
+
+- `python3 scripts/check_watchos_contracts.py` — portable contracts passed.
+- Root and external-directory `/usr/bin/make check` — passed.
+- Xcode and physical Apple Watch verification — unavailable in this environment.
+
+### Bugs / findings
+
+- P2 fixed: README documented historical versions but left HealthKit target
+  enablement and signing prerequisites only in the device checklist.
+
+### Blockers
+
+- Native compilation and authorization behavior still require compatible Xcode
+  and paired Apple Watch hardware.
+
+### Next action
+
+- Keep HealthKit API modernization separate and require the existing physical
+  device evidence before changing workout or authorization behavior.
+
 ## 2026-06-26 03:53 PDT
 
 - **Priority:** P1 HealthKit sample privacy and workout correctness.

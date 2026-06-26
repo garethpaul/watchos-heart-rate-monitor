@@ -78,6 +78,9 @@ AUTHORIZATION_RESULT_SEMANTICS_PLAN_PATH = (
 WORKOUT_SAMPLE_ADMISSION_PLAN_PATH = (
     ROOT / "docs" / "plans" / "2026-06-26-workout-sample-admission.md"
 )
+HEALTHKIT_SETUP_PLAN_PATH = (
+    ROOT / "docs" / "plans" / "2026-06-26-healthkit-setup-guide.md"
+)
 WORKFLOW_PATH = ROOT / ".github" / "workflows" / "check.yml"
 INTERFACE_CONTROLLERS = [
     Path("HeartyMonitor WatchKit Extension/InterfaceController.swift"),
@@ -133,6 +136,23 @@ def test_healthkit_entitlements_are_enabled():
         )
 
 
+def test_readme_documents_healthkit_target_setup():
+    readme = " ".join((ROOT / "README.md").read_text().split())
+    for phrase in (
+        "HealthKit Target Configuration",
+        "HeartyMonitor/HeartyMonitor.entitlements",
+        "HeartyMonitor WatchKit Extension/HeartyMonitor WatchKit Extension.entitlements",
+        "com.apple.developer.healthkit",
+        "NSHealthShareUsageDescription",
+        "iOS 9.2 and watchOS 2.1 deployment targets",
+        "Do not commit signing identities, provisioning profiles, team identifiers, or private entitlements",
+    ):
+        assert_true(
+            phrase in readme,
+            "README HealthKit setup must preserve: {0}".format(phrase),
+        )
+
+
 def assert_completed_plan(path, label):
     assert_true(path.is_file(), "{0} plan must live under docs/plans".format(label))
     plan_text = path.read_text()
@@ -174,6 +194,7 @@ def test_completed_plans_are_in_docs_plans():
         "HealthKit authorization result semantics",
     )
     assert_completed_plan(WORKOUT_SAMPLE_ADMISSION_PLAN_PATH, "workout sample admission")
+    assert_completed_plan(HEALTHKIT_SETUP_PLAN_PATH, "HealthKit setup guide")
     checker_main = Path(__file__).read_text().rsplit("def main():", 1)[1]
     assert_true(
         "test_device_verification_checklist_is_auditable," in checker_main,
@@ -904,6 +925,7 @@ def main():
     tests = [
         test_healthkit_plists_have_share_usage_description,
         test_healthkit_entitlements_are_enabled,
+        test_readme_documents_healthkit_target_setup,
         test_completed_plans_are_in_docs_plans,
         test_device_verification_checklist_is_auditable,
         test_ci_workflow_runs_static_baseline,
